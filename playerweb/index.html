@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<script src="js/vue.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/lyricParsing.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="css/materialdesignicons.min.css">
+		<style>
+			*{
+				font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", 微软雅黑, Arial, sans-serif;
+			}
+			
+			.toptip {
+				margin: 20px 24px;
+				position: fixed;
+				top: 0;
+			}
+			
+			.confont{
+				margin: 32px 24px;
+				font-size: 28px;
+			}
+			
+			.rbottom{
+				height: 50px;
+				margin-bottom: 2rem;
+				display: flex;
+				justify-content: space-between;
+			}
+			
+			.ctrlsx {
+				line-height: 32px;
+				align-items: center;
+				text-align: center;
+				display: flex;
+				justify-content: space-between;
+			}
+			
+			.ctrls {
+				align-items: center;
+				text-align: center;
+				display: flex;
+				justify-content: space-between;
+				width: 170px;
+				margin: 0 auto;
+			}
+			
+			.ctrls div{
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				font-size: 32px;
+			}
+		</style>
+		<style>
+			*{
+				font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+			}
+			::-webkit-scrollbar {
+				width: .5rem;
+				height: .5rem;
+				background: hsla(0, 0%, 100%, 0.6);
+			}
+					
+			::-webkit-scrollbar-track {
+				border-radius: 0;
+			}
+					
+			::-webkit-scrollbar-thumb {
+				border-radius: 0;
+				background-color: rgba(95, 95, 95, .4);
+				transition: all .2s;
+				float: right;
+					
+				&:hover {
+					background-color: rgba(95, 95, 95, .7);
+				}
+			}
+		</style>
+		<style>
+			/*清除原有样式*/
+			input[type=range] {
+			    -webkit-appearance: none;
+			    width: 16vw;
+			}
+			input[type=range]::-webkit-slider-thumb {
+			    -webkit-appearance: none;
+			}
+			/*设置滑动条的样式*/
+			input[type=range]::-webkit-slider-runnable-track {
+			   height: 0.3vh;
+			   background: linear-gradient(90deg,#ff4f16,#f77850);
+			}
+			input[type=range]::-moz-range-track {
+			   height: 0.3vh;
+			   background: linear-gradient(90deg,#ff4f16,#f77850);
+			}
+			/*去除获取焦点时的边框*/ 
+			input[type=range]:focus {
+			    outline: none;
+			}
+			/*设置滑块样式*/
+			input[type=range]::-webkit-slider-thumb {
+			    -webkit-appearance: none;
+			    height: 1.0vw;
+			    width: 1.4vh;
+			    background: #509EFE;
+			    margin-top: -5px; 
+			} 
+			input[type=range]::-moz-range-thumb  {
+			    -webkit-appearance: none;
+			    height: 1.0vw;
+			    width: 1.4vh;
+			    background: #509EFE;
+			    margin-top: -5px; 
+			}
+			/*IE下*/
+			input[type=range] {
+			    -webkit-appearance: none;
+			    width: 16vw;
+			   background: #509EFE;
+			}
+			/*设置IE下滑动条的样式*/
+			input[type=range]::-ms-track {
+			    height: 8px;
+			    border-color: transparent; /*去除原有边框*/
+			    color: transparent; /*去除轨道内的竖线*/
+			    background: #E6EFFB;
+			}
+			/*设置IE下滑块样式*/
+			input[type=range]::-ms-thumb {
+			    height: 8px;
+			    width: 35px;
+			    background: #61A5FF;   
+			}
+			 
+			input[type=range]:focus::-ms-fill-lower {
+			    background: #E6EFFB;
+			    border: none;
+			}
+			input[type=range]:focus::-ms-fill-upper {
+			    background: #E6EFFB;
+			    border: none;
+			}
+		</style>
+		<style>
+			.div-list{
+				width: 100%;
+				height: calc(100% - 48px);
+				overflow: scroll;
+				margin: 0;
+				overflow-x: hidden;
+			}
+
+			.div-list p{
+				line-height: 32px;
+				border-bottom: 1px solid rgba(0,0,0,.12);
+				padding: 4px 28px;
+				transition: all .2s ease;
+				cursor: pointer;
+				margin: 0;
+			}
+			
+			.div-list p:hover{
+				background-color: #EEEEEE;
+			}
+
+			#canvaslist{
+				position: absolute;
+				top: 0;
+				margin-top: calc(50% - 480px);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<div style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;z-index: 5;">
+				<div id="seekdisplay" style="height: 100%;width: 0%;background-color: rgba(0,0,0,0.25);transition:all 0.4s cubic-bezier(0.46, 0.03, 0.52, 0.96) 0s;">
+					
+				</div> 
+			</div>
+			<!-- <div style="position: fixed;top: 0;left: 0;width: 100%;">
+				<div class="toptip" style="left: 0;">
+					<span class="confont">{{ NowPlay.now }}</span>
+				</div>
+				<div class="toptip" style="right: 0;">
+					<span class="confont">{{ NowPlay.len }}</span>
+				</div>
+			</div> -->
+			<div style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;text-align: center;">
+				<h2>{{ SongInfo.title }}</h2>
+				<h4>{{ SongInfo.artist }}</h4>
+				<div id="canvaslist"></div>
+				<!-- <canvas id="canvasx" width="300" height="80"></canvas> -->
+			</div>			
+			
+			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 100;">
+				<div style="width: 100%;height: 100%;">
+					<div style="margin-top: 10px;padding-left: 40px;padding-right: 40px;">
+						<div id="cur_time" style="height: 4px;position: relative;margin: 4px 0px 4px;cursor: pointer;width: 100%;margin-left: 4px;margin-right: 4px;margin: 16px 0;">
+							<div style="width: 100%;height: 4px;position: absolute;background-color: #1B5E20;"></div>
+							<div id="curs" style="width: 0%;height: 4px;background: linear-gradient(90deg,#ff4f16,#f77850);position: absolute;transition:all 0.4s cubic-bezier(0.46, 0.03, 0.52, 0.96) 0s;"></div>
+						</div>
+						<div class="ctrls" style="float: left;">
+							<div class="mdi mdi-play" @click="btnplay()"></div>
+							<div class="mdi mdi-pause" @click="btnpause()"></div>
+							<div class="mdi mdi-stop" @click="btnstop()"></div>
+						</div>
+						<div class="ctrlsx" style="float: right;">
+							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;"></div>
+							<input id="vols" type="range" max="100" min="0" value="100" style="margin-right: 32px;width: 50%;"/>
+							<!-- <div class="mdi mdi-repeat" style="font-size: 26px;margin-right: 32px;"></div> -->
+							<div onclick="rightlist()" class="mdi mdi-playlist-music" style="font-size: 26px;cursor: pointer;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="rglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
+				<div style="width: auto;height: 100%;" onclick="rightlist()"></div>
+				<div id="rglistn" style="position: fixed;right: -30%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">播放列表</div>
+					<div class="div-list" id="songlist">
+						<p v-for="(items,index) in list" @click="clicklist(index)">
+							{{ items.artist }} - {{ items.title }}
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	<script src="./js/howler.core.min.js"></script>
+	<script src="./js/player.js"></script>
+	<script>
+		function secondToDate(result) {
+		    let m = Math.floor((result / 60 % 60)) < 10 ? '0' + Math.floor((result / 60 % 60)) : Math.floor((result / 60 % 60));
+		    let s = Math.floor((result % 60)) < 10 ? '0' + Math.floor((result % 60)) : Math.floor((result % 60));
+		    return m + ":" + s;
+		}
+		
+		function findPos(el){
+			let x = 0, y = 0;
+			if(el.offsetParent){
+				do {
+					x += el.offsetLeft;
+					y += el.offsetTop;
+				} while (el = el.offsetParent);
+			}
+			return { x: x, y: y };
+		};
+		
+		var player = new Player({
+			api:"/list/getlist"
+		});
+		console.log(player)
+		player.initlist()
+		
+		var vm = new Vue({
+			el: "#app",
+			data: {
+				SongInfo:{
+					title: 'KaraokePlayerDemo',
+					artist: '-',
+					album: '-',
+				},
+				NowPlay: {
+					now: "00:00",
+					len: "00:00",
+				},
+				list:[]
+			},
+			methods: {
+				clicklist(index){
+					console.log()
+					player.init(index);
+					player.play();
+					
+					/*
+					let p = player.playPercentage() * 100;
+					let duration = player.duration()
+					let seek = player.seek()
+					vm.$data.NowPlay.now = secondToDate(seek)
+					vm.$data.NowPlay.len = secondToDate(duration)
+					document.getElementById('seekdisplay').style.width = p + '%';
+					*/
+				},
+				btnnext(){
+					player.next()
+				},
+				btnplay(){
+					console.log(player.playerStatus.paused)
+					if(player.playerStatus.paused){
+						player.play()
+					}
+				},
+				btnpause(){
+					player.pause()
+				},
+				btnstop(){
+					player.stop()
+				},
+				updatalist(newlist){
+					this.list = newlist;
+				}
+			},
+			mounted(){
+				
+			}
+		});
+		
+		document.getElementById('cur_time').addEventListener('mouseup',(ew) => {
+			let x = document.getElementById('cur_time')
+			let pos = findPos(x);
+			let diffy = ew.pageX - pos.x;
+			let b = diffy / (x.clientWidth || x.offsetWidth || x.scrollWidth || x.style.width);
+			player.seek(b * player.duration())
+			
+			let p = player.playPercentage() * 100;
+			let duration = player.duration()
+			let seek = player.seek()
+			vm.$data.NowPlay.now = secondToDate(seek)
+			vm.$data.NowPlay.len = secondToDate(duration)
+			document.getElementById('curs').style.width = p + '%';
+		})
+		
+		function ps(){
+			let s = document.getElementById("ps_button")
+			
+			if(player.paused){
+				player.play()
+				if(s.classList.contains('mdi-play')){
+					s.classList.remove('mdi-play');
+					s.classList.add('mdi-pause');
+				}
+			}else{
+				player.pause()
+				if(!s.classList.contains('mdi-play')){
+					s.classList.remove('mdi-pause');
+					s.classList.add('mdi-play');
+				}
+			}
+		}
+		
+		document.getElementById('vols').addEventListener('change',function(){
+			player.volume(this.value)
+		})
+		
+		player.onplaysonginfo = function(e){
+			console.log(e);
+			vm.$data.SongInfo.title = e.title;
+			vm.$data.SongInfo.artist = e.artist;
+		}
+
+		player.onupdatasonglist = function(e){
+			vm.updatalist(e)
+		}
+
+		
+		setInterval(function(){
+			let p = player.playPercentage() * 100;
+			let duration = player.duration()
+			let seek = player.seek()
+			vm.$data.NowPlay.now = secondToDate(seek)
+			vm.$data.NowPlay.len = secondToDate(duration)
+			document.getElementById('curs').style.width = p + '%';
+		},1000)
+		
+		function rightlist(){
+			let p = document.getElementById('rglist');
+			let u = document.getElementById('rglistn');
+			
+			if(p.style.display == "none"){
+				p.style.display = 'unset';
+				u.style.right = '0%';
+			}else{
+				u.style.right = '-30%';
+				p.style.display = 'none';
+			}
+		}
+		
+		document.getElementById('songlist').addEventListener('mousewheel',function(e){
+			e.path.forEach(element => {
+				if(element.id == 'songlist'){
+					if(element.offsetHeight + element.scrollTop == element.scrollHeight){
+						console.log("滚动到底")
+						player.getnextpage()
+					}
+				}
+			});
+			
+		})
+	</script>
+</html>
