@@ -4,7 +4,7 @@
 		<meta charset="utf-8" />
 		<title></title>
 		<script src="js/vue.min.js" type="text/javascript" charset="utf-8"></script>
-		<script src="js/lyricParsing.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/lyricParsingS.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="css/materialdesignicons.min.css">
 		<style>
 			*{
@@ -191,7 +191,7 @@
 			<div style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;text-align: center;">
 				<h2>{{ SongInfo.title }}</h2>
 				<h4>{{ SongInfo.artist }}</h4>
-				<div id="canvaslist"></div>
+				<canvas id="canvasV" height="540" width="1280"></canvas>
 				<!-- <canvas id="canvasx" width="300" height="80"></canvas> -->
 			</div>			
 			
@@ -251,7 +251,8 @@
 		};
 		
 		var player = new Player({
-			api:"/list/getlist"
+			api:"/song.json",
+			debug:false
 		});
 		console.log(player)
 		player.initlist()
@@ -347,7 +348,6 @@
 		})
 		
 		player.onplaysonginfo = function(e){
-			console.log(e);
 			vm.$data.SongInfo.title = e.title;
 			vm.$data.SongInfo.artist = e.artist;
 		}
@@ -378,17 +378,5 @@
 				p.style.display = 'none';
 			}
 		}
-		
-		document.getElementById('songlist').addEventListener('mousewheel',function(e){
-			e.path.forEach(element => {
-				if(element.id == 'songlist'){
-					if(element.offsetHeight + element.scrollTop == element.scrollHeight){
-						console.log("滚动到底")
-						player.getnextpage()
-					}
-				}
-			});
-			
-		})
 	</script>
 </html>

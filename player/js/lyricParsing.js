@@ -53,8 +53,8 @@ function lyricParsing(option){
 			for (let i = 0;i < this.canvasCount; i++) {
 				let o = document.createElement('canvas');
 				o.width = window.innerWidth;
-				o.height = 36;
-				o.style.margin = '12px 0';
+				o.height = 42;
+				o.style.margin = '6px 0';
 				this.canvasListId.appendChild(o)
 			}
 		}
@@ -339,9 +339,6 @@ function lyricParsing(option){
 				let time_s = t_status;
 				for (let a = 0; a < this.maxline; a++) { //循环
 					if (this.oLRC.ms[a].t < time_s) {
-						let con = this.canvas.getContext("2d");
-						con.font = this.rander_font;
-						con.fillStyle = "coral";
 						if (this.maxline > 1) {
 							let lens = this.oLRC.ms.length;
 							if(a + 1 < this.maxline){
@@ -393,7 +390,7 @@ function lyricParsing(option){
 				let time_s = t_status; //当前播放时间
 				for (let a = 0; a < this.maxline; a++) { //循环
 					if (this.oLRC.ms.t[a][0] < time_s) {
-						let con = this.canvas.getContext("2d");
+						let con = document.getElementById(this.testcanvas).getContext("2d");
 						con.font = this.rander_font;
 						con.fillStyle = "coral";
 						if (this.maxline > 1) {

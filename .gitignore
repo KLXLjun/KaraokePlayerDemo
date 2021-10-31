@@ -1,2 +1,2 @@
-music/*
-songlist.db
+/player/music/*
+/player/song.json

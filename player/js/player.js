@@ -17,9 +17,11 @@ var Player = function(option){
 	
 	addEventListener("resize", function(e) {
 		let cv = document.getElementById('canvasx');
-		console.log(cv)
-		cv.width = window.innerWidth;
-		cv.height = window.innerWidth;
+		if(cv != null){
+			console.log(cv)
+			cv.width = window.innerWidth;
+			cv.height = window.innerWidth;
+		}
 	});
 	
 	this.listArr = {
@@ -35,8 +37,10 @@ var Player = function(option){
 	this.sound;
 	
 	this.lrPar;
+
 	
 	this.reflist = typeof option.reflist == 'undefined' ? function(){} : option.reflist;
+	this.debug = typeof option.debug == 'undefined' ? false : option.debug;
 	this.onplaysonginfo = typeof option.onplay == 'undefined' ? function(){} : option.onplay;
 	this.api = typeof option.api == 'undefined' ? "" : option.api;
 	this.apiconfig = {
@@ -48,41 +52,30 @@ var Player = function(option){
 
 Player.prototype = {
 	initlist: function(){
-		this.getnextpage()
-	},
-	getnextpage: function(){
-		let pgs = this.apiconfig.nowloadpage
-		if(pgs < this.apiconfig.songlen / this.apiconfig.limit || this.apiconfig.songlen == 0){
-			let lthis = this;
-			let ajaxRequest = new XMLHttpRequest();
-			ajaxRequest.open('GET', this.api + '?page=' + this.apiconfig.nowloadpage + (this.apiconfig.limit != 0 ? "&limit=" + this.apiconfig.limit : ""), true);
-			ajaxRequest.responseType = 'json';
-			ajaxRequest.onload = function() {
-				console.log(ajaxRequest.response)
-				let dt = ajaxRequest.response;
-				if(lthis.apiconfig.limit != dt.limit){
-					lthis.apiconfig.limit = dt.limit;
-				}
-				lthis.apiconfig.songlen = dt.length;
-				dt.result.forEach(element => {
-					lthis.listArr.songinfo.push({
-						"title":element.title,
-						"artist":element.artist,
-						"album":element.album
-					});
-					lthis.listArr.songsrc.push(element.music)
-					lthis.listArr.songlrcsrc.push(element.lrc)
+		let lthis = this;
+		let ajaxRequest = new XMLHttpRequest();
+		ajaxRequest.open('GET', this.api, true);
+		ajaxRequest.responseType = 'json';
+		ajaxRequest.onload = function() {
+			console.log(ajaxRequest.response)
+			let dt = ajaxRequest.response;
+			lthis.apiconfig.songlen = dt.length;
+			dt.forEach(element => {
+				lthis.listArr.songinfo.push({
+					"title":element.title,
+					"artist":element.artist,
+					"album":element.album
 				});
-				lthis.onupdatasonglist(lthis.listArr.songinfo)
-				console.log(this,lthis)
-			}
-			ajaxRequest.send();
-			this.apiconfig.nowloadpage = this.apiconfig.nowloadpage + 1
+				lthis.listArr.songsrc.push(element.music)
+				lthis.listArr.songlrcsrc.push(element.lrc)
+			});
+			lthis.onupdatasonglist(lthis.listArr.songinfo)
 		}
+		ajaxRequest.send();
 	},
 	init: function(index){
 		let thiss = this;
-		console.log(thiss)
+		if(this.debug)console.log(thiss)
 		thiss.stop()
 		thiss.playerStatus.currentIndex = index;
 		this.sound = new Howl({
@@ -95,13 +88,13 @@ Player.prototype = {
 			rate: thiss.rate,
 			mute: thiss.playerStatus.muted,
 			onload() {
-				console.log('onload!',this);
+				console.log('onload!');
 			},
 			onplay() {
 				thiss.playerStatus.playing = true;
 				thiss.playerStatus.paused = false;
 				//that.duration = that.formatTime(Math.round(this._duration));
-				console.log('onplay!',this);
+				console.log('onplay!');
 			},
 			onmute() {
 				thiss.playerStatus.muted = this._muted;
@@ -124,36 +117,44 @@ Player.prototype = {
 		thiss.onplaysonginfo(thiss.listArr.songinfo[thiss.playerStatus.currentIndex])
 		if(typeof this.lrPar != 'undefined'){
 			thiss.lrPar.clear();
-			thiss.lrPar = null;
 		}
-		
-		thiss.lrPar = new lyricParsing({
-		    //音频标签
-		    audio:thiss,
-		    //画布标签                  
-		    canvas:document.getElementById('canvasx'),
-		    //歌词全局偏移值
-		    offset:60,
-		    //调试模式
-		    debug:true,
-		    //画布刷新时间(毫秒)
-		    reftime:32,
-		    //渲染字体
-			rander_font:"32px Microsoft YaHei",
-			canvasListId:document.getElementById('canvaslist')
-		});
+
+		if(!thiss.lrPar){
+			thiss.lrPar = new lyricParsingS({
+				//音频标签
+				audio:thiss,
+				//画布标签                  
+				canvas:document.getElementById('canvasV'),
+				//歌词全局偏移值
+				offset:60,
+				//调试模式
+				debug:false,
+				//画布刷新时间(毫秒)
+				reftime:20,
+				//渲染字体
+				rander_font:"32px Microsoft YaHei",
+				//渲染进程
+				draw: "js/DrawWorker.js"
+			});
+		}
 		
 		let ajaxRequest = new XMLHttpRequest();
 		ajaxRequest.open('GET', this.listArr.songlrcsrc[thiss.playerStatus.currentIndex], true);
 		ajaxRequest.responseType = 'text';
-		ajaxRequest.onload = function() {
-			thiss.lrPar.init(ajaxRequest.response)
+		ajaxRequest.onreadystatechange = function() {
+			if (ajaxRequest.readyState == 4) {
+                if (ajaxRequest.status == 200) {
+					thiss.lrPar.init(ajaxRequest.response)
+				}else{
+					thiss.lrPar.init("[00:00.00]Not Found Lrc File")
+				}
+			}
 		}
 		ajaxRequest.send();
 	},
 	play: function(index){
 		if(typeof this.sound != "undefined"){
-			console.log(this)
+			if(this.debug)console.log(this)
 			this.sound.play()
 		}
 	},
