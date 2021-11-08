@@ -22,16 +22,6 @@ function lyricParsingS(option){
 	///歌词部分
 	this.lrc_top = 0;
 	this.lrc_offset = 0;
-	
-	this.drawWorkerPath = typeof option.draw!="undefined" ? option.draw : undefined;
-	this.drawWorker = new Worker(this.drawWorkerPath); 
-	this.offScreenW = this.canvas.transferControlToOffscreen();
-	this.offScreenWok = false;
-	
-	this.drawWorker.onmessage = function (event) {
-		let data = event.data;
-		alert(JSON.stringify(data));
-	}
 
 	this.loadStop = false;
 	
@@ -43,10 +33,10 @@ function lyricParsingS(option){
 	
 	this.canvas.addEventListener("mousewheel",(e) => {
 		//console.log(e)
-		this.drawWorker.postMessage({
-			commends:"MouseWheel",
-			f:e.deltaY * 0.2
-		});
+		// this.drawWorker.postMessage({
+		// 	commends:"MouseWheel",
+		// 	f:e.deltaY * 0.2
+		// });
 	});
 	this.lrcup = true;
 	
@@ -56,22 +46,20 @@ function lyricParsingS(option){
 	}
 	
 	//初始化
-	this.init = function(lrc){
+	this.init = (lrc) => {
 		this.loadStop = false;
-		if(!this.offScreenWok){
-			this.drawWorker.postMessage({
-				commends: "OffScreenSet",
-				canvas: this.offScreenW
-			},[this.offScreenW]);
-			this.offScreenWok = true
+		this.canvase = {
+			width:this.canvas.width,
+			height:this.canvas.height
 		}
 		
-		this.drawWorker.postMessage({
-			commends: "FontSizeSet",
-			size: 32,
-			font: 'Microsoft YaHei',
-			heig: measureText(32, 'Microsoft YaHei', "abc测试123")
-		});
+		con = this.canvas.getContext("2d");
+		fonth = 32;
+		k = fonth / 2;
+		fontname = 'Microsoft YaHei';
+		fontheigth = measureText(32, 'Microsoft YaHei', "abc测试123");
+		this.inputnow = 0;
+		this.lper = 0;
 		
 		this.canvas.addEventListener("scroll", function(e){
 			onsole.log(e)
@@ -100,7 +88,7 @@ function lyricParsingS(option){
 	}
 	
 	//读取歌词
-	this.read_lrc = function(){
+	this.read_lrc = () => {
 		//console.group('歌词读取日志');
 		this.oLRC = {
 			ti: "", //歌曲名
@@ -285,38 +273,46 @@ function lyricParsingS(option){
 		//console.groupEnd();
 		if(this.debug)console.log(this.oLRC)
 		
+		let callx = [];
 		if(this.oLRC.olrc){
-			this.drawWorker.postMessage({
-				commends: "ReadLrc",
-				all: this.oLRC.ms
-			});
+			callx = this.oLRC.ms;
 		}else{
 			let bks = [];
-			console.log(this.oLRC)
 			for (let i = 0; i<this.oLRC.ms.al.length;i++) {
 				bks.push({
 					t:this.oLRC.ms.t[i][0],
 					c:this.oLRC.ms.al[i]
 				});
 			}
-			if(this.debug)console.log(bks)
-			this.drawWorker.postMessage({
-				commends: "ReadLrc",
-				all: bks
-			});
+			callx = bks;
 		}
+
+		uplock = true;
+		con.font = fonth + "px " + fontname;
+		let o = 0;
+		for (let va in callx) {
+			callx[va].width = con.measureText(callx[va].c).width;
+			o += fonth + hz;
+			callx[va].offset = o;
+		}
+		uplock = false;
+		xxslock = true;
+
+		allx = callx;
+		
+		//console.log(this.oLRC)
 		this.loadStop = true;
-		setTimeout(()=>{
-			this.drawWorker.postMessage({
-				commends: "ref",
-				now: 0
-			});
-		},1);
+		this.ref_lrc();
+		console.log(allx);
 	}
 	
-	this.ref_lrc = function(){
+	this.ref_lrc = () => {
+		if(!this.audio){
+			return 
+		}
 		let p_status=this.audio.playerStatus.paused;
 		let t_status=this.audio.seek() + (this.Global_lrc_offset / 1000) + (this.oLRC.offset / 1000);
+		let findok = false;
 		if(this.oLRC.olrc){
 			if(!p_status){
 				//if(this.debug)console.log(p_status,this.oLRC.olrc);
@@ -324,22 +320,19 @@ function lyricParsingS(option){
 				for (let a = 0; a < Lrc_query.ci; a++) { //循环
 					if (this.oLRC.ms[a].t < time_s) {
 						if (Lrc_query.ci > 1) {
-							let lens = this.oLRC.ms.length;
 							if(a + 1 < Lrc_query.ci){
 								if(this.oLRC.ms[a+1].t > time_s){
 									//console.log(this.oLRC.ms[a].c)
-									this.drawWorker.postMessage({
-										commends: "ref",
-										now: a
-									});
+									this.lper = per;
+									this.inputnow = a;
+									findok = true;
 								}
 							}else{
 								//最后一行
 								//console.log(this.oLRC.ms[a].c)
-								this.drawWorker.postMessage({
-									commends: "ref",
-									now: a
-								});
+								this.lper = per;
+								this.inputnow = a;
+								findok = true;
 							}
 						}
 					}
@@ -371,7 +364,6 @@ function lyricParsingS(option){
 									if(this.debug)console.log(t_con);
 									
 									let per = 0;
-									
 									let gpps = con.measureText(this.oLRC.ms.c[a][p]).width;//当前唱的字的宽度
 									//console.log((g +1) < (lens - 1), g +1,lens - 1)
 									if((p + 1) < lens){ //判断是否到最后一个字
@@ -389,11 +381,14 @@ function lyricParsingS(option){
 										this.curX = con.measureText(t_con).width;
 										per = 1;
 									}
-									this.drawWorker.postMessage({
-										commends: "ref",
-										now: a,
-										per: per
-									});
+									// this.drawWorker.postMessage({
+									// 	commends: "ref",
+									// 	now: a,
+									// 	per: per
+									// });
+									this.lper = per;
+									this.inputnow = a;
+									findok = true;
 								}
 							}else{
 								//最后一句
@@ -421,72 +416,22 @@ function lyricParsingS(option){
 									this.curX = con.measureText(t_con).width;
 									per = 1;
 								}
-								this.drawWorker.postMessage({
-									commends: "ref",
-									now: a,
-									per: per
-								});
+								this.lper = per;
+								this.inputnow = a;
+								findok = true;
 							}
 						}
-						con = null;
 					} else {
 						continue;
 					}
 				}
-				time_s = null;
 			}
 		}
-		p_status = null;
-		t_status = null;
-	}
-	
-	/* canvas */
-	this.render = function(){
-		let con = this.canvas.getContext("2d")
-		con.clearRect(0, 0, this.canvase.width, this.canvase.width);
-		con.save();
-		//上半部分
-		
-		//先绘制第一句歌词 (整句)
-		con.save();
-		con.font = this.rander_font;
-		con.fillStyle = "#abcdef";
-		con.fillText(this.ltext, this.leftX1, 32);
-		con.restore();
-	
-		con.save();
-		con.beginPath();
-		
-		//裁剪没有播放到的位置
-		con.rect(this.leftX1, 0, this.curX, 90);
-		con.closePath();
-		con.clip();
-	
-		//绘制当前播放歌词
-		con.font = this.rander_font;
-		con.fillStyle = "coral";
-		con.fillText(this.ltext, this.leftX1, 32);
-		con.restore();
-		
-		
-		//下半部分歌词
-		con.save();
-		con.font = this.rander_font;
-		con.fillStyle = "#abcdef";
-		con.fillText(this.ltext2, this.leftX2, 72);
-		con.restore();
-		
-		con.save();
-		con.beginPath();
-		
-		con.rect(this.leftX2, 32, this.curX2, 60);
-		con.closePath();
-		con.clip();
-		
-		con.font = this.rander_font;
-		con.fillStyle = "coral";
-		con.fillText(this.ltext2, this.leftX2, 72);
-		con.restore();
+		if(!findok){
+			this.lper = 0;
+			this.inputnow = 0;
+		}
+		ref_canvas();
 	}
 
 	function secondToDate(result) {
@@ -496,16 +441,19 @@ function lyricParsingS(option){
 	}	
 	
 	function measureText(fontSize, fontFamily, text) {
-		var span = document.createElement("span");
-		var result = {
+		let span = document.getElementById("testfontsizelps") || document.createElement("span");
+		let result = {
 		   width: 0,
 		   height: 0
 		};
+		span.id = "testfontsizelps";
 		span.style.visibility = "hidden";
 		span.style.fontSize = fontSize + "px";//文字大小
 		span.style.fontFamily = fontFamily;//字体
 		span.style.display = "inline-block";
-		document.body.appendChild(span);
+		if(!document.getElementById("testfontsizelps")){
+			document.body.appendChild(span);
+		}
 		if (typeof span.textContent != "undefined") {
 			span.textContent = text;
 		} else {
@@ -515,5 +463,157 @@ function lyricParsingS(option){
 		result.width = parseFloat(window.getComputedStyle(span).width) || span.offsetWidth;
 		result.height = parseFloat(window.getComputedStyle(span).height) || span.offsetHeight;
 		return result;
+	}
+
+	
+	// 歌词渲染
+ 	let allx = null;	//歌词数组
+	let uplock = false;	//数组读取锁定
+	let fonth = 0;		//字体大小
+	let hz = 12;		//行间距
+	let gdoffset = 0;	//缓动
+	this.inputnow = 0;	//输入显示行
+	this.outnow = 0;	//当前显示行
+	let sco = 0;		//滚动量
+	let scolock = false;//滚动锁定
+	let timer = null;	//滚动倒计时
+	let pos = 0;		//滚动锁定时位置
+	let xxslock = false;//强制刷新锁 true即刷新一次
+	let fontname = 'Microsoft YaHei' //字体名称
+	let fontheigth = 0;
+	this.lper = 0;
+	var ref_canvas = () => {
+		// let con = this.con;
+		let tfs = this.canvase;
+		let nowa = allx[this.inputnow];
+		if(allx != null && !uplock && con != null){
+			let h2 = (this.canvase.height / 2);
+			if(!scolock){
+				pos = nowa.offset;
+			}else{
+				pos += sco;
+				if(pos < h2){
+					pos = h2;
+				}
+				sco = 0;
+			}
+			
+			if((this.outnow != this.inputnow && gdoffset < 1 && !scolock)){
+				this.outnow = this.inputnow;
+				gdoffset = fonth + hz;
+			}
+			
+			if(gdoffset < 2){
+				gdoffset = 0;
+				if(xxslock){
+					xxslock = false;
+				}else{
+					// if(!scolock){
+					// 	return
+					// }
+				}
+			}
+			con.clearRect(0, 0, this.canvase.width, this.canvase.height);
+			con.save();
+			
+			con.font = fonth + "px " + fontname;
+			con.fillStyle = "coral";
+			con.textAlign = "center";
+			let l = fonth + hz + gdoffset;
+			if(uplock){
+				return
+			}
+			if(typeof allx[this.outnow] == "undefined"){
+				return
+			}
+			if(allx[this.outnow].offset < h2 && !scolock){
+				l += h2 - nowa.offset - (fonth + hz);
+			}else{
+				l -= (fonth + hz) * 2;
+			}
+			let y1;
+			let y2;
+			
+			if(!scolock){
+				y1 = nowa.offset - h2;
+				y2 = nowa.offset + h2;
+			}else{
+				y1 = pos - h2;
+				y2 = pos + h2;
+			}
+			
+			con.globalCompositeOperation = "source-over";
+			
+			for (let va in allx) {
+				let p = allx[va];
+				if(p.offset > y1 && p.offset < y2){
+					l += fonth + hz;
+					if(va == this.outnow){
+						con.fillStyle = "#B8B8B8";
+						con.fillText(p.c, (tfs.width / 2), l);
+						con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
+						con.save();
+						
+						if(this.lper != -1){
+							con.save();
+							con.rect((tfs.width / 2) - (p.width / 2), l - fontheigth.height + 8, p.width * this.lper, fontheigth.height);
+							con.clip();
+
+							con.fillStyle = "#ce0003";
+							con.fillText(p.c, (tfs.width / 2), l);
+							con.restore();
+							con.save();
+						}else{
+							con.fillStyle = "#B8B8B8";
+							con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
+							con.fillText(p.c, (tfs.width / 2), l);
+							con.save();
+						}
+					}else{
+						con.fillStyle = "#B8B8B8";
+						con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
+						con.fillText(p.c, (tfs.width / 2), l);
+						con.save();
+					}
+					con.save();
+				}
+			}
+			if(gdoffset > 0 && !scolock){
+				gdoffset = gdoffset - (gdoffset / 8);
+			}
+			
+			//锁定
+			if(scolock){
+				con.fillStyle = "#FFFFFF";
+				con.beginPath();
+				con.moveTo(0, h2 + 2);
+				con.lineTo(this.canvase.width, h2 + 2);
+				con.stroke();
+			}
+			
+			//上下渐变
+			con.beginPath();
+			con.globalCompositeOperation = "destination-out";
+			
+			let t = con.createLinearGradient(0, 0, 0, 64);
+			t.addColorStop(0, "rgba(255,255,255,1)");
+			t.addColorStop(1, "rgba(255,255,255,0)");
+			
+			con.fillStyle = t;
+			con.fillRect(0, 0, this.canvase.width, 64);
+			
+			con.save();
+			
+			con.beginPath();
+			let t2 = con.createLinearGradient(0, this.canvase.height - 64, 0,this.canvase.height);
+			
+			t2.addColorStop(0, "rgba(255,255,255,0)");
+			t2.addColorStop(1, "rgba(255,255,255,1)");
+			
+			con.fillStyle = t2;
+			con.fillRect(0, this.canvase.height - 64, this.canvase.width, 64);
+			
+			con.save();
+		}
 	}
 }

@@ -75,7 +75,7 @@ Player.prototype = {
 	},
 	init: function(index){
 		let thiss = this;
-		if(this.debug)console.log(thiss)
+		console.log(thiss)
 		thiss.stop()
 		thiss.playerStatus.currentIndex = index;
 		this.sound = new Howl({
@@ -130,11 +130,9 @@ Player.prototype = {
 				//调试模式
 				debug:false,
 				//画布刷新时间(毫秒)
-				reftime:20,
+				reftime:16,
 				//渲染字体
 				rander_font:"32px Microsoft YaHei",
-				//渲染进程
-				draw: "js/DrawWorker.js"
 			});
 		}
 		

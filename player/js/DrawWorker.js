@@ -43,7 +43,7 @@ self.onmessage = function(e) {
 			tfs_w = tfs.width;
 			break;
 		case "ref":
-			let nowa = allx[e.data.now]
+			let nowa = allx[e.data.now];
 			let per = typeof e.data.per != "undefined" ? e.data.per : -1;
 			if(allx != null && !uplock && con != null){
 				let h2 = (tfs_h / 2);
@@ -52,7 +52,7 @@ self.onmessage = function(e) {
 				}else{
 					pos += sco;
 					if(pos < h2){
-						pos = h2
+						pos = h2;
 					}
 					sco = 0;
 				}
@@ -96,7 +96,7 @@ self.onmessage = function(e) {
 				if(allx[onwp].offset < h2 && !scolock){
 					l += h2 - nowa.offset - (fonth + hz);
 				}else{
-					l -= (fonth + hz) * 2
+					l -= (fonth + hz) * 2;
 				}
 				let y1;
 				let y2;
@@ -118,6 +118,8 @@ self.onmessage = function(e) {
 						if(va == e.data.now){
 							con.fillStyle = "#B8B8B8";
 							con.fillText(p.c, (tfs.width / 2), l);
+							con.fillStyle = "#B8B8B8";
+							con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
 							con.save();
 							
 							if(per != -1){
@@ -145,11 +147,15 @@ self.onmessage = function(e) {
 								con.save();
 								con.beginPath();
 							}else{
-								con.fillStyle = "#000000";
+								con.fillStyle = "#B8B8B8";
+								con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
+								con.fillStyle = "#B8B8B8";
 								con.fillText(p.c, (tfs.width / 2), l);
 								con.save();
 							}
 						}else{
+							con.fillStyle = "#B8B8B8";
+								con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
 							con.fillStyle = "#B8B8B8";
 							con.fillText(p.c, (tfs.width / 2), l);
 							con.save();
@@ -176,7 +182,7 @@ self.onmessage = function(e) {
 				con.beginPath();
 				con.globalCompositeOperation = "destination-out";
 				
-				let t = con.createLinearGradient(0, 0, 0, 64)
+				let t = con.createLinearGradient(0, 0, 0, 64);
 				t.addColorStop(0, "rgba(255,255,255,1)");
 				t.addColorStop(1, "rgba(255,255,255,0)");
 				
