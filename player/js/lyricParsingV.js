@@ -421,7 +421,7 @@ function lyricParsingV(option){
 				element1.style.textAlign = "center";
 				let element2 = document.createElement("span");
 				element1.className = "lrcdisplay_style lrc_display_backrow";
-				element2.innerText = "";
+				element2.innerText = "-";
 				element1.appendChild(element2);
 				element1.setAttribute("lrcrow",-1);
 				element1.setAttribute("lrctype","gone");
