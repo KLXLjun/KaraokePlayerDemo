@@ -23,13 +23,18 @@ function lyricParsingS(option){
 	this.lrc_top = 0;
 	this.lrc_offset = 0;
 
-	this.loadStop = false;
+	let loadStop = false;
 	
-	this.timer = setInterval(() => {
-		if(this.loadStop){
+	let timerx = () => {
+		if(loadStop){
 			this.ref_lrc();
 		}
-	}, this.Refresh_interval);
+		window.requestAnimationFrame(timerx)
+	}
+	// this.timer = setInterval(() => {
+		
+	// }, this.Refresh_interval);
+	window.requestAnimationFrame(timerx);
 	
 	this.canvas.addEventListener("mousewheel",(e) => {
 		//console.log(e)
@@ -47,7 +52,7 @@ function lyricParsingS(option){
 	
 	//初始化
 	this.init = (lrc) => {
-		this.loadStop = false;
+		loadStop = false;
 		this.canvase = {
 			width:this.canvas.width,
 			height:this.canvas.height
@@ -59,7 +64,16 @@ function lyricParsingS(option){
 		fontname = 'Microsoft YaHei';
 		fontheigth = measureText(32, 'Microsoft YaHei', "abc测试123");
 		this.inputnow = 0;
-		this.lper = 0;
+		this.lper = -1;
+		con.font = fonth + "px " + fontname;
+		con.fillStyle = "coral";
+		con.textAlign = "center";
+
+		con.shadowColor = 'rgba(0, 0, 0, 0.2)';
+		con.shadowOffsetX = 1;
+		con.shadowOffsetY = 1;
+
+		lrccache = [];
 		
 		this.canvas.addEventListener("scroll", function(e){
 			onsole.log(e)
@@ -291,9 +305,9 @@ function lyricParsingS(option){
 		con.font = fonth + "px " + fontname;
 		let o = 0;
 		for (let va in callx) {
-			callx[va].width = con.measureText(callx[va].c).width;
+			callx[va].width = parseInt((con.measureText(callx[va].c).width).toFixed(0));
 			o += fonth + hz;
-			callx[va].offset = o;
+			callx[va].offset = parseInt(o.toFixed(0));
 		}
 		uplock = false;
 		xxslock = true;
@@ -301,7 +315,7 @@ function lyricParsingS(option){
 		allx = callx;
 		
 		//console.log(this.oLRC)
-		this.loadStop = true;
+		loadStop = true;
 		this.ref_lrc();
 		console.log(allx);
 	}
@@ -323,14 +337,14 @@ function lyricParsingS(option){
 							if(a + 1 < Lrc_query.ci){
 								if(this.oLRC.ms[a+1].t > time_s){
 									//console.log(this.oLRC.ms[a].c)
-									this.lper = per;
+									this.lper = 1;
 									this.inputnow = a;
 									findok = true;
 								}
 							}else{
 								//最后一行
 								//console.log(this.oLRC.ms[a].c)
-								this.lper = per;
+								this.lper = 1;
 								this.inputnow = a;
 								findok = true;
 							}
@@ -481,7 +495,7 @@ function lyricParsingS(option){
 	let xxslock = false;//强制刷新锁 true即刷新一次
 	let fontname = 'Microsoft YaHei' //字体名称
 	let fontheigth = 0;
-	this.lper = 0;
+	this.lper = 1;
 	var ref_canvas = () => {
 		// let con = this.con;
 		let tfs = this.canvase;
@@ -516,9 +530,6 @@ function lyricParsingS(option){
 			con.clearRect(0, 0, this.canvase.width, this.canvase.height);
 			con.save();
 			
-			con.font = fonth + "px " + fontname;
-			con.fillStyle = "coral";
-			con.textAlign = "center";
 			let l = fonth + hz + gdoffset;
 			if(uplock){
 				return
@@ -542,78 +553,70 @@ function lyricParsingS(option){
 				y2 = pos + h2;
 			}
 			
-			con.globalCompositeOperation = "source-over";
-			
+			// con.globalCompositeOperation = "source-over";
+			con.fillStyle = "#B8B8B8";
+			con.save();
 			for (let va in allx) {
 				let p = allx[va];
-				if(p.offset > y1 && p.offset < y2){
+				if(p.offset + fontheigth.height > y1 && p.offset - fontheigth.height < y2){
 					l += fonth + hz;
 					if(va == this.outnow){
 						con.fillStyle = "#B8B8B8";
 						con.fillText(p.c, (tfs.width / 2), l);
-						con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
-						con.save();
 						
-						if(this.lper != -1){
+						if(this.lper != 1){
 							con.save();
+							con.beginPath();
 							con.rect((tfs.width / 2) - (p.width / 2), l - fontheigth.height + 8, p.width * this.lper, fontheigth.height);
+							con.closePath();
 							con.clip();
 
 							con.fillStyle = "#ce0003";
 							con.fillText(p.c, (tfs.width / 2), l);
 							con.restore();
-							con.save();
 						}else{
-							con.fillStyle = "#B8B8B8";
-							con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
+							con.fillStyle = "#ce0003";
 							con.fillText(p.c, (tfs.width / 2), l);
-							con.save();
 						}
-					}else{
 						con.fillStyle = "#B8B8B8";
-						con.fillText(p.c, (tfs.width / 2) + 1, l + 1);
-						con.fillText(p.c, (tfs.width / 2), l);
-						con.save();
+					}else{
+						//con.fillText(p.c, (tfs.width / 2), l);
 					}
-					con.save();
 				}
 			}
 			if(gdoffset > 0 && !scolock){
 				gdoffset = gdoffset - (gdoffset / 8);
 			}
 			
-			//锁定
-			if(scolock){
-				con.fillStyle = "#FFFFFF";
-				con.beginPath();
-				con.moveTo(0, h2 + 2);
-				con.lineTo(this.canvase.width, h2 + 2);
-				con.stroke();
-			}
+			// //锁定
+			// if(scolock){
+			// 	con.fillStyle = "#FFFFFF";
+			// 	con.beginPath();
+			// 	con.moveTo(0, h2 + 2);
+			// 	con.lineTo(this.canvase.width, h2 + 2);
+			// 	con.stroke();
+			// 	con.closePath();
+			// }
 			
-			//上下渐变
-			con.beginPath();
-			con.globalCompositeOperation = "destination-out";
+			// //上下渐变
+			// con.globalCompositeOperation = "destination-out";
 			
-			let t = con.createLinearGradient(0, 0, 0, 64);
-			t.addColorStop(0, "rgba(255,255,255,1)");
-			t.addColorStop(1, "rgba(255,255,255,0)");
+			// let t = con.createLinearGradient(0, 0, 0, 64);
+			// t.addColorStop(0, "rgba(255,255,255,1)");
+			// t.addColorStop(1, "rgba(255,255,255,0)");
 			
-			con.fillStyle = t;
-			con.fillRect(0, 0, this.canvase.width, 64);
+			// con.fillStyle = t;
+			// con.fillRect(0, 0, this.canvase.width, 64);
+
+			// let t2 = con.createLinearGradient(0, this.canvase.height - 64, 0,this.canvase.height);
 			
-			con.save();
+			// t2.addColorStop(0, "rgba(255,255,255,0)");
+			// t2.addColorStop(1, "rgba(255,255,255,1)");
 			
-			con.beginPath();
-			let t2 = con.createLinearGradient(0, this.canvase.height - 64, 0,this.canvase.height);
+			// con.fillStyle = t2;
+			// con.fillRect(0, this.canvase.height - 64, this.canvase.width, 64);
 			
-			t2.addColorStop(0, "rgba(255,255,255,0)");
-			t2.addColorStop(1, "rgba(255,255,255,1)");
-			
-			con.fillStyle = t2;
-			con.fillRect(0, this.canvase.height - 64, this.canvase.width, 64);
-			
-			con.save();
+			con.restore();
 		}
 	}
 }

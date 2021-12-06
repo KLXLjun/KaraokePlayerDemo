@@ -1,0 +1,70 @@
+/*歌词样式*/
+.lrcdisplay{
+	/* transition: all .4s ease-out; */
+	line-height: 1rem;
+    align-self: center;
+    margin: 0 auto;
+}
+
+.lrcdisplay_style{
+	margin: 0 auto;
+	font-size: 32px;
+	padding: 8px 0px;
+	background: #fff -webkit-linear-gradient(left, coral, coral) no-repeat 0 0;
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+}
+
+.lrcdisplay_style span{
+	line-height: 1rem;
+}
+
+.lrc_display_backrow{
+	opacity: 0.8;
+	transform: translateY(-100%);
+	animation: a .35s ease-in-out;
+	animation-fill-mode: forwards;
+}
+
+.lrc_display_nowrow{
+	opacity: 1;
+	transform: translateY(0%) scale(1);
+	animation: b .35s ease-in-out;
+	animation-fill-mode: forwards;
+}
+
+.lrc_display_nextrow{
+	opacity: 0;
+	transform: translateY(50%) scale(.6);
+	animation: c .35s ease-in-out;
+	animation-fill-mode: forwards;
+}
+
+/*歌词样式 - 结束*/
+
+.confont {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro';
+	margin: 0 4px;
+}
+
+@keyframes a {
+    to {
+        opacity: 0;
+        transform: translateY(-100%) scale(.85)
+    }
+}
+
+@keyframes b {
+    to {
+        opacity: 1;
+        transform: translateY(-100%)
+    }
+}
+
+@keyframes c {
+    to {
+        opacity: .5;
+        transform: translateY(0) scale(.85)
+    }
+}
+

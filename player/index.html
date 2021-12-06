@@ -4,8 +4,9 @@
 		<meta charset="utf-8" />
 		<title></title>
 		<script src="js/vue.min.js" type="text/javascript" charset="utf-8"></script>
-		<script src="js/lyricParsingS.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/lyricParsingV.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="css/materialdesignicons.min.css">
+		<link href="css/1.css" rel="stylesheet"/>
 		<style>
 			*{
 				font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", 微软雅黑, Arial, sans-serif;
@@ -191,7 +192,11 @@
 			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;">
 				<h2>{{ SongInfo.title }}</h2>
 				<h4>{{ SongInfo.artist }}</h4>
-				<canvas id="canvasV" height="320" width="1280"></canvas>
+				<div id="lrcSor" style="height: 400px;width: 100%;background-color: rgb(94, 94, 94);overflow: hidden;display: flex;">
+					<div id="lrcDomList" class="lrcdisplay">
+						
+					</div>
+				</div>
 				<!-- <canvas id="canvasx" width="300" height="80"></canvas> -->
 			</div>
 			

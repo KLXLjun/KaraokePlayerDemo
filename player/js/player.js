@@ -115,24 +115,13 @@ Player.prototype = {
 			},
 		});
 		thiss.onplaysonginfo(thiss.listArr.songinfo[thiss.playerStatus.currentIndex])
-		if(typeof this.lrPar != 'undefined'){
-			thiss.lrPar.clear();
-		}
 
 		if(!thiss.lrPar){
-			thiss.lrPar = new lyricParsingS({
-				//音频标签
-				audio:thiss,
-				//画布标签                  
-				canvas:document.getElementById('canvasV'),
-				//歌词全局偏移值
-				offset:60,
-				//调试模式
-				debug:false,
-				//画布刷新时间(毫秒)
-				reftime:16,
-				//渲染字体
-				rander_font:"32px Microsoft YaHei",
+			thiss.lrPar = new lyricParsingV({
+				Audio:thiss,	//音频标签
+				LrcDom: "lrcDomList",
+				debug:false,	//调试模式
+				reftime:32,		//画布刷新时间(毫秒)
 			});
 		}
 		
@@ -142,9 +131,9 @@ Player.prototype = {
 		ajaxRequest.onreadystatechange = function() {
 			if (ajaxRequest.readyState == 4) {
                 if (ajaxRequest.status == 200) {
-					thiss.lrPar.init(ajaxRequest.response)
+					thiss.lrPar.ReadLrc(ajaxRequest.response)
 				}else{
-					thiss.lrPar.init("[00:00.00]Not Found Lrc File")
+					thiss.lrPar.ReadLrc("[00:00.00]Not Found Lrc File")
 				}
 			}
 		}

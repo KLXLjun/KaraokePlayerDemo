@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name=viewport content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
+		<title></title>
+		<link href="css/1.css" rel="stylesheet"/>
+		<style>
+			*{
+				font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<div id="debugx"></div>
+			<audio id="audios" controls="" style="width: 600px;" src="music/王朝,玄觞 - 大浪淘沙.mp3"></audio>
+			<div id="lrcSor" style="height: 400px;width: 100%;background-color: rgb(94, 94, 94);overflow: hidden;display: flex;">
+				<div id="lrcDomList" class="lrcdisplay">
+					
+				</div>
+			</div>
+			<canvas id="canvas2" width="500" style="margin-top:6px" height="200"></canvas>
+		</div>
+	</body>
+	<script src="js/lyricParsingV.js"></script>
+	<script>
+		var lrPar = new lyricParsingV({
+			Audio: "audios",
+			Debug: true,
+			LrcDom: "lrcDomList"
+		});
+		
+		let ajaxRequest = new XMLHttpRequest();
+		ajaxRequest.open('GET', 'music/王朝,玄觞 - 大浪淘沙.lrc', true);
+		ajaxRequest.responseType = 'text';
+		ajaxRequest.onload = function() {
+			lrPar.ReadLrc(ajaxRequest.response)
+		}
+		ajaxRequest.send();
+	</script>
+	<script>
+		
+		const SPECTROGRAM_COUNT = 32;
+		
+		var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+		var source = audioCtx.createMediaElementSource(document.getElementById("audios"));
+		var analyser = audioCtx.createAnalyser();
+		var reverb = audioCtx.createConvolver();
+		var filter = audioCtx.createBiquadFilter(); //音频滤波器 (100Hz低音)
+		var filter2 = audioCtx.createBiquadFilter(); //音频滤波器 (100Hz低音)
+		source.connect(analyser);
+		
+		//低音提升
+		//连接滤波器
+		source.connect(filter);
+		source.connect(filter2);
+		//  设置filter的参数
+		filter.type = 'lowpass'; // 低通 滤波器 详情可以见 BiquadFilterNode的文档
+		filter.frequency.value = 120; // 设置截止位置为 440HZ
+		
+		filter2.type = 'highpass'; // 低通 滤波器 详情可以见 BiquadFilterNode的文档
+		filter2.frequency.value = 120; // 设置截止位置为 440HZ
+		
+		analyser.size = 2048;
+		analyser.minDecibels = -90;
+		analyser.maxDecibels = -10;
+		analyser.smoothingTimeConstant = 0.55;
+		
+		filter2.connect(audioCtx.destination);
+		reverb.connect(audioCtx.destination);
+		
+		/*
+		{
+			let ajaxRequest=new XMLHttpRequest();
+			//jsdelivr 貌似不支持wav... 直接是403
+			ajaxRequest.open('GET','48000/ConvolutionReverbInTheOtherRoom.wav', true);
+			ajaxRequest.responseType = 'arraybuffer';
+			ajaxRequest.onload = function() {
+				var audioData = ajaxRequest.response;
+				audioCtx.decodeAudioData(audioData, function(buffer) {
+					concertHallBuffer = buffer;
+					soundSource = audioCtx.createBufferSource();
+					soundSource.buffer = concertHallBuffer;
+					reverb.buffer = concertHallBuffer;
+					console.log("成功载入混响样本!")
+				}, function(e) {
+					console.log("错误!无法解码音频数据 错误为:" + e.err)
+				})
+			};
+			ajaxRequest.send();
+		}
+		*/
+		
+		
+		var f_b = [];//波峰位置数组
+		var down_b = [];//波峰下落时间
+		var down_b_speed = [];//波峰下落速度 Math.pow(10,0.5)
+		var down_b_speed2 = [];//下落峰值计数
+		
+		for(let i=0;i<SPECTROGRAM_COUNT;i++){
+			f_b[i] = 0;
+		}
+		
+		for(let i=0;i<SPECTROGRAM_COUNT;i++){
+			down_b[i] = 20;
+		}
+		
+		for(let i=0;i<SPECTROGRAM_COUNT;i++){
+			down_b_speed[i] = 1;
+			down_b_speed2[i] = 1;
+		}
+		
+		var canves2 = document.getElementById('canvas2');
+		var g2 = canves2.getContext("2d");
+		
+		var width = canvas2.width,
+			height = canvas2.height;
+		
+		var output = new Uint8Array(analyser.size);
+		
+		var loc = new Array(SPECTROGRAM_COUNT);
+		var sampleratePoint = new Array(SPECTROGRAM_COUNT);
+		for (let i = 0; i < loc.length; i++) {
+		    //20000表示的最大频点20KHZ,这里的20-20K之间坐标的数据成对数关系,这是音频标准
+		    var F = Math.pow((audioCtx.sampleRate)/2 / 20, 1.0 / SPECTROGRAM_COUNT);//方法中20为低频起点20HZ，31为段数
+		    sampleratePoint[i] = 20 * Math.pow(F, i);//乘方，30为低频起点
+		    //这里的samplerate为采样率(samplerate / (1024 * 8))是8分频后点FFT的点密度
+		    loc[i] = sampleratePoint[i] / (audioCtx.sampleRate / (2048 * 2));//估算出每一个频点的位置
+		}
+		console.log(loc,sampleratePoint);
+		loc[0] = 0;
+		loc[1] = 1;
+		loc[2] = 2;
+		
+		for(let i=0;i<loc.length;i++){
+			loc[i] = Math.round(loc[i]);
+		}
+		
+		g2.strokeStyle = "#cccccc";
+		
+		(function callee(e) {
+			analyser.getByteFrequencyData(output);
+			
+			g2.clearRect(0, 0, width, height);
+			g2.beginPath();
+			g2.lineWidth = 15;
+			
+			for (let i = 0; i <= SPECTROGRAM_COUNT; i++) {
+				let b = i;
+				let hls = height - ((output[loc[b]] / 256) * height);
+				
+				if(output[loc[b]] > f_b[b]){
+					//大于最高峰值
+					f_b[b] = output[loc[b]];
+					down_b[b] = 8;
+					down_b_speed[b] = 1;
+					down_b_speed2[b] = 1;
+				}else{
+					//小于最高峰值
+					if(f_b[b] > 0){
+						down_b_speed2[b] = Math.pow(down_b_speed[b],1);
+						down_b_speed[b] = down_b_speed[b] + 0.02;
+						f_b[b] = f_b[b] - down_b_speed2[b];
+					}
+				}
+				
+				if(down_b[b] > 0){
+					down_b[b] = down_b[b] - 1;
+				}
+				
+				let grd2=g2.createLinearGradient(400,800,400,0);
+				grd2.addColorStop(0,"#FF0000");
+				grd2.addColorStop(1,"#00FF00");
+				g2.fillStyle=grd2;
+				g2.fillRect(i * 16,hls,g2.lineWidth,height);
+				
+				g2.fillStyle="#000000";
+				g2.fillRect(i * 16,height - ((f_b[b] / 256) * height),g2.lineWidth,1);
+			}
+		
+			g2.stroke();
+			requestAnimationFrame(callee);
+		})();
+		
+	</script>
+</html>
