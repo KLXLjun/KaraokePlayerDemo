@@ -15,27 +15,15 @@ var Player = function(option){
 		loop:false
 	}
 	
-	addEventListener("resize", function(e) {
-		let cv = document.getElementById('canvasx');
-		if(cv != null){
-			console.log(cv)
-			cv.width = window.innerWidth;
-			cv.height = window.innerWidth;
-		}
-	});
-	
 	this.listArr = {
-		songinfo:   [], //use listmodel
-		songsrc:    []  ,//string
+		songinfo:   [],
+		songsrc:    [],
 		songlrcsrc: []
 	}
 	
 	this.nowline = -1;
-	
 	let thiss = this;
-	
 	this.sound;
-	
 	this.lrPar;
 
 	
@@ -93,7 +81,6 @@ Player.prototype = {
 			onplay() {
 				thiss.playerStatus.playing = true;
 				thiss.playerStatus.paused = false;
-				//that.duration = that.formatTime(Math.round(this._duration));
 				console.log('onplay!');
 			},
 			onmute() {
