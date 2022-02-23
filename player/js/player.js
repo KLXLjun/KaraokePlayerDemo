@@ -10,22 +10,17 @@ var Player = function(option){
 		volume: 1,
 		playing:false,
 		paused:true,
+		currentIndexHash:"",
 		currentIndex:0,
 		muted:false,
 		loop:false
 	}
-	
-	this.listArr = {
-		songinfo:   [],
-		songsrc:    [],
-		songlrcsrc: []
-	}
-	
-	this.nowline = -1;
-	let thiss = this;
-	this.sound;
-	this.lrPar;
 
+	this.listmap = new Map();
+	this.listhash = [];
+	
+	this.sound = document.getElementById("audioElement");
+	this.lrPar;
 	
 	this.reflist = typeof option.reflist == 'undefined' ? function(){} : option.reflist;
 	this.debug = typeof option.debug == 'undefined' ? false : option.debug;
@@ -36,162 +31,155 @@ var Player = function(option){
 		songlen: 0,
 		limit: 0
 	}
-}
 
-Player.prototype = {
-	initlist: function(){
-		let lthis = this;
+	this.initlist = () => {
 		let ajaxRequest = new XMLHttpRequest();
 		ajaxRequest.open('GET', this.api, true);
 		ajaxRequest.responseType = 'json';
-		ajaxRequest.onload = function() {
+		ajaxRequest.onload = () => {
 			console.log(ajaxRequest.response)
 			let dt = ajaxRequest.response;
-			lthis.apiconfig.songlen = dt.length;
+			this.apiconfig.songlen = dt.length;
 			dt.forEach(element => {
-				lthis.listArr.songinfo.push({
-					"title":element.title,
-					"artist":element.artist,
-					"album":element.album
-				});
-				lthis.listArr.songsrc.push(element.music)
-				lthis.listArr.songlrcsrc.push(element.lrc)
+				this.listmap.set(element.hash,element.info);
+				this.listhash.push(element.hash);
 			});
-			lthis.onupdatasonglist(lthis.listArr.songinfo)
+			this.onupdatasonglist(this.listmap);
 		}
 		ajaxRequest.send();
-	},
-	init: function(index){
-		let thiss = this;
-		console.log(thiss)
-		thiss.stop()
-		thiss.playerStatus.currentIndex = index;
-		this.sound = new Howl({
-			src: this.listArr.songsrc[thiss.playerStatus.currentIndex],
-			autoplay: false,
-			loop: thiss.playerStatus.loop,
-			volume: thiss.playerStatus.volume,
-			html5: true,
-			preload:true,
-			rate: thiss.rate,
-			mute: thiss.playerStatus.muted,
-			onload() {
-				console.log('onload!');
-			},
-			onplay() {
-				thiss.playerStatus.playing = true;
-				thiss.playerStatus.paused = false;
-				console.log('onplay!');
-			},
-			onmute() {
-				thiss.playerStatus.muted = this._muted;
-			},
-			onpause() {
-				thiss.playerStatus.playing = false;
-				thiss.playerStatus.paused = true;
-			},
-			onstop() {
-				thiss.playerStatus.playing = false;
-				thiss.playerStatus.paused = true;
-			},
-			onend() {
-				thiss.playerStatus.playing = false;
-				thiss.playerStatus.paused = true;
-				console.log('end');
-				thiss.next();
-			},
-		});
-		thiss.onplaysonginfo(thiss.listArr.songinfo[thiss.playerStatus.currentIndex])
+	}
 
-		if(!thiss.lrPar){
-			thiss.lrPar = new lyricParsingV({
-				Audio:thiss,	//音频标签
-				LrcDom: "lrcDomList",
-				debug:false,	//调试模式
-				reftime:32,		//画布刷新时间(毫秒)
-			});
-		}
-		
-		let ajaxRequest = new XMLHttpRequest();
-		ajaxRequest.open('GET', this.listArr.songlrcsrc[thiss.playerStatus.currentIndex], true);
-		ajaxRequest.responseType = 'text';
-		ajaxRequest.onreadystatechange = function() {
-			if (ajaxRequest.readyState == 4) {
-                if (ajaxRequest.status == 200) {
-					thiss.lrPar.ReadLrc(ajaxRequest.response)
-				}else{
-					thiss.lrPar.ReadLrc("[00:00.00]Not Found Lrc File")
+	this.init = () => {
+		this.sound.addEventListener("ended",() =>{
+			this.playerStatus.playing = false;
+			this.playerStatus.paused = true;
+			console.log('end');
+			this.next();
+		});
+
+		this.sound.addEventListener("pause",() =>{
+			this.playerStatus.playing = false;
+			this.playerStatus.paused = true;
+		});
+
+		this.sound.addEventListener("play",() =>{
+			this.playerStatus.playing = true;
+			this.playerStatus.paused = false;
+			console.log('onplay!');
+		});
+
+		this.sound.addEventListener("playing",() =>{
+			this.playerStatus.playing = false;
+			this.playerStatus.paused = true;
+		});
+	}
+	
+	this.play = (index) => {
+		if(typeof this.sound != "undefined"){
+			if(index == undefined){
+				if(this.debug)console.log(this);
+				this.sound.play();
+			}else{
+				this.pause();
+				let hash = this.listhash[index];
+				let selectx = this.listmap.get(hash);
+				if(selectx == undefined){
+					return
 				}
+				this.playerStatus.currentIndexHash = hash;
+				this.playerStatus.currentIndex = index;
+				this.sound.src = selectx.music;
+				this.onplaysonginfo(selectx)
+
+				if(!this.lrPar){
+					this.lrPar = new lyricParsingV({
+						Audio: this,	//音频标签
+						LrcDom: "lrcDomList",
+						debug:false,	//调试模式
+						reftime:32,		//画布刷新时间(毫秒)
+					});
+				}
+				
+				let ajaxRequest = new XMLHttpRequest();
+				ajaxRequest.open('GET', selectx.lrc, true);
+				ajaxRequest.responseType = 'text';
+				ajaxRequest.onreadystatechange = () => {
+					if (ajaxRequest.readyState == 4) {
+						if (ajaxRequest.status == 200) {
+							this.lrPar.ReadLrc(ajaxRequest.response)
+						}else{
+							this.lrPar.ReadLrc("[00:00.00]Not Found Lrc File")
+						}
+					}
+				}
+				ajaxRequest.send();
+				this.sound.play();
 			}
 		}
-		ajaxRequest.send();
-	},
-	play: function(index){
-		if(typeof this.sound != "undefined"){
-			if(this.debug)console.log(this)
-			this.sound.play()
-		}
-	},
-	pause: function(){
+	}
+
+	this.pause = () => {
 		if(typeof this.sound != "undefined"){
 			this.sound.pause()
-		}	
-	},
-	stop(){
-		if(typeof this.sound != "undefined"){
-			this.sound.stop()
 		}
-	},
-	next(){
+	}
+
+	this.next = () => {
 		if((this.apiconfig.songlen > this.playerStatus.currentIndex + 1)){
 			this.playerStatus.currentIndex = this.playerStatus.currentIndex + 1
-			this.init(this.playerStatus.currentIndex);
-			this.play();
+			this.play(this.playerStatus.currentIndex);
 		}
-	},
-	duration: function(){
+	}
+
+	this.duration = () => {
 		if(typeof this.sound != "undefined"){
-			return this.sound.duration();
+			return this.sound.duration;
 		}else{
 			return 0;
 		}
-	},
-	seek: function(v){
+	}
+
+	this.seek = (v) => {
 		if(typeof this.sound != "undefined"){
 			if(typeof v != "undefined"){
-				this.sound.seek(v);
+				this.sound.currentTime = v;
 			}else{
-				return this.sound.seek();
+				return this.sound.currentTime;
 			}
 		}else{
 			return 0;
 		}
-	},
-	playPercentage: function(){
+	}
+
+	this.playPercentage = () => {
 		if(typeof this.sound != "undefined"){
-			let d = this.sound.duration();
-			let s = this.sound.seek();
+			let d = this.sound.duration;
+			let s = this.sound.currentTime;
 			return s / d;
 		}else{
 			return 0;
 		}
-	},
-	volume: function(v){
+	}
+
+	this.volume = (v) => {
 		if(typeof this.sound != "undefined"){
 			let t = v / 100;
 			this.playerStatus.volume = t;
-			this.sound.volume(t);
+			this.sound.volume = t;
 		}
-	},
-	loop: function(){
+	}
+
+	this.loop = () => {
 		if(typeof this.sound != "undefined"){
 			this.playerStatus.loop = !this.playerStatus.loop;
+			this.sound.loop = this.playerStatus.loop;
 		}
-	},
-	mute: function(){
+	}
+
+	this.mute = () => {
 		if(typeof this.sound != "undefined"){
 			this.playerStatus.muted = !this.playerStatus.muted;
-			this.sound.mute()
+			this.sound.muted = this.playerStatus.muted;
 		}
 	}
 }

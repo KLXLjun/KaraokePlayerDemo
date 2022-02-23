@@ -170,13 +170,20 @@
 				margin-top: calc(50% - 480px);
 			}
 		</style>
+		<style>
+			.rightbutton{
+				font-size: 26px;
+				cursor: pointer;
+				padding: 0 2px;
+			}
+		</style>
 	</head>
 	<body>
 		<div id="app">
 			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;">
 				<h2>{{ SongInfo.title }}</h2>
 				<h4>{{ SongInfo.artist }}</h4>
-				<div id="lrcSor" style="height: 400px;width: 100%;background-color: rgb(94, 94, 94);overflow: hidden;display: flex;">
+				<div id="lrcSor" style="height: 200px;width: 100%;background-color: rgb(19 19 19 / 80%);overflow: hidden;display: flex;">
 					<div id="lrcDomList" class="lrcdisplay">
 						
 					</div>
@@ -198,8 +205,8 @@
 						<div class="ctrlsx" style="float: right;">
 							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;"></div>
 							<input id="vols" type="range" max="100" min="0" value="100" style="margin-right: 32px;width: 50%;"/>
-							<!-- <div class="mdi mdi-repeat" style="font-size: 26px;margin-right: 32px;"></div> -->
-							<div onclick="rightlist()" class="mdi mdi-playlist-music" style="font-size: 26px;cursor: pointer;"></div>
+							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>
+							<div onclick="rightlist()" class="mdi mdi-playlist-music rightbutton" ></div>
 						</div>
 					</div>
 				</div>
@@ -207,18 +214,29 @@
 			
 			<div id="rglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
 				<div style="width: auto;height: 100%;" onclick="rightlist()"></div>
-				<div id="rglistn" style="position: fixed;right: -30%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
+				<div id="rglistn" style="position: fixed;right: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
 					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">播放列表</div>
 					<div class="div-list" id="songlist">
-						<p v-for="(items,index) in list" @click="clicklist(index)">
-							{{ items.artist }} - {{ items.title }}
+						<p v-for="(value, name) in list" @click="clicklist(name)">
+							{{ value[1].artist }} - {{ value[1].title }}
+						</p>
+					</div>
+				</div>
+			</div>
+			<div id="lglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
+				<div style="width: auto;height: 100%;" onclick="lightlist()"></div>
+				<div id="lglistn" style="position: fixed;left: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">播放列表</div>
+					<div class="div-list" id="playsonglist">
+						<p v-for="(items,index) in playlist" @click="clicklist(index)">
+							{{ items.info.artist }} - {{ items.info.title }}
 						</p>
 					</div>
 				</div>
 			</div>
 		</div>
+		<audio id="audioElement" style="display: none;" controls="false"></audio>
 	</body>
-	<script src="./js/howler.core.min.js"></script>
 	<script src="./js/player.js"></script>
 	<script>
 		function secondToDate(result) {
@@ -242,8 +260,8 @@
 			api:"/song.json",
 			debug:false
 		});
-		console.log(player)
-		player.initlist()
+		console.log(player);
+		player.initlist();
 		
 		var vm = new Vue({
 			el: "#app",
@@ -257,13 +275,14 @@
 					now: "00:00",
 					len: "00:00",
 				},
-				list:[]
+				list:[],
+				playlist:[]
 			},
 			methods: {
 				clicklist(index){
 					console.log()
-					player.init(index);
-					player.play();
+					player.init();
+					player.play(index);
 					
 					/*
 					let p = player.playPercentage() * 100;
@@ -275,19 +294,19 @@
 					*/
 				},
 				btnnext(){
-					player.next()
+					player.next();
 				},
 				btnplay(){
 					console.log(player.playerStatus.paused)
 					if(player.playerStatus.paused){
-						player.play()
+						player.play();
 					}
 				},
 				btnpause(){
-					player.pause()
+					player.pause();
 				},
 				btnstop(){
-					player.stop()
+					player.stop();
 				},
 				updatalist(newlist){
 					this.list = newlist;
@@ -303,13 +322,13 @@
 			let pos = findPos(x);
 			let diffy = ew.pageX - pos.x;
 			let b = diffy / (x.clientWidth || x.offsetWidth || x.scrollWidth || x.style.width);
-			player.seek(b * player.duration())
+			player.seek(b * player.duration());
 			
 			let p = player.playPercentage() * 100;
-			let duration = player.duration()
-			let seek = player.seek()
-			vm.$data.NowPlay.now = secondToDate(seek)
-			vm.$data.NowPlay.len = secondToDate(duration)
+			let duration = player.duration();
+			let seek = player.seek();
+			vm.$data.NowPlay.now = secondToDate(seek);
+			vm.$data.NowPlay.len = secondToDate(duration);
 			document.getElementById('curs').style.width = p + '%';
 		})
 		
@@ -332,7 +351,7 @@
 		}
 		
 		document.getElementById('vols').addEventListener('change',function(){
-			player.volume(this.value)
+			player.volume(this.value);
 		})
 		
 		player.onplaysonginfo = function(e){
@@ -341,28 +360,44 @@
 		}
 
 		player.onupdatasonglist = function(e){
-			vm.updatalist(e)
+			vm.updatalist(e);
 		}
 
 		
 		setInterval(function(){
 			let p = player.playPercentage() * 100;
-			let duration = player.duration()
-			let seek = player.seek()
-			vm.$data.NowPlay.now = secondToDate(seek)
-			vm.$data.NowPlay.len = secondToDate(duration)
+			let duration = player.duration();
+			let seek = player.seek();
+			vm.$data.NowPlay.now = secondToDate(seek);
+			vm.$data.NowPlay.len = secondToDate(duration);
 			document.getElementById('curs').style.width = p + '%';
 		},1000)
 		
 		function rightlist(){
 			let p = document.getElementById('rglist');
-			let u = document.getElementById('rglistn');
+			let u = document.getElementById('lglist');
+			
+			if(u.style.display != "none"){
+				u.style.display = 'unset';
+			}
 			
 			if(p.style.display == "none"){
 				p.style.display = 'unset';
-				u.style.right = '0%';
 			}else{
-				u.style.right = '-30%';
+				p.style.display = 'none';
+			}
+		}
+
+		function lightlist(){
+			let p = document.getElementById('lglist');
+			let u = document.getElementById('rglist');
+			
+			if(u.style.display != "none"){
+				u.style.display = 'unset';
+			}
+			if(p.style.display == "none"){
+				p.style.display = 'unset';
+			}else{
 				p.style.display = 'none';
 			}
 		}

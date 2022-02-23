@@ -13,8 +13,12 @@ import (
 	"github.com/bogem/id3v2"
 )
 
+type ListSongHash struct {
+	Hash string    `json:"hash"`
+	Info *SongType `json:"info"`
+}
+
 //SongType 歌曲信息
-//title,artist,album,localpath as music,lrclocalpath as lrc
 type SongType struct {
 	Title  string `json:"title"`
 	Artist string `json:"artist"`
@@ -30,7 +34,7 @@ func main() {
 }
 
 func scansong() {
-	result := make([]SongType, 0)
+	result := make([]ListSongHash, 0)
 	files, err := ioutil.ReadDir("./music")
 	if err != nil {
 		log.Fatal(err)
@@ -70,7 +74,10 @@ func scansong() {
 					tmp.Music = "music/" + filename
 					tmp.Lrc = "music/" + filename[:len(filename)-3] + "lrc"
 				}
-				result = append(result, tmp)
+				tmp2 := ListSongHash{}
+				tmp2.Info = &tmp
+				tmp2.Hash = MD5Enc(filename)
+				result = append(result, tmp2)
 			}
 		}
 	}

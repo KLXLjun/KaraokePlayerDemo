@@ -1,4 +1,4 @@
-/*歌词样式*/
+/*--歌词样式 开始--*/
 .lrcdisplay{
     align-self: center;
     margin: 0 auto;
@@ -6,6 +6,7 @@
 	height: 120px;
 }
 
+/* 滚动式输出 */
 .lrcdisplay_style{
 	margin: 0 auto;
 	font-size: 2rem;
@@ -38,7 +39,34 @@
 	animation: c .35s ease-in-out;
 }
 
-/*歌词样式 - 结束*/
+/* 经典卡拉OK */
+.lrcdisplay_classic_style{
+	margin: 0 auto;
+	font-size: 2rem;
+	padding: 8px 0px;
+	background: #fff -webkit-linear-gradient(left, coral, coral) no-repeat 0 0;
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+	animation-fill-mode: forwards!important;
+}
+
+.lrcdisplay_classic_style span{
+	font-weight: 900;
+}
+
+.lrc_classic_display_countrow{
+	opacity: 0.75;
+	color: lawngreen;
+}
+
+.lrc_classic_display_nowrow{
+	animation: y .25s ease-in-out;
+}
+.lrc_classic_display_nextrow{
+	animation: z .25s ease-in-out;
+}
+
+/*--歌词样式 结束--*/
 
 .confont {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro';
@@ -66,3 +94,14 @@
     }
 }
 
+@keyframes y {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes z {
+    to {
+        opacity: 0.55;
+    }
+}

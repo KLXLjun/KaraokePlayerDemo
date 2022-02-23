@@ -5,6 +5,7 @@ function lyricParsingV(option){
 	this.GlobalLrcOffset = typeof option.offset!="undefined" && typeof option.offset=="number" ? option.offset : 0;
 	this.RanderFont = typeof option.RanderFont!="undefined" && typeof option.RanderFont=="string" ? option.RanderFont : "32px Microsoft YaHei";
 	this.LrcDom = typeof option.LrcDom!="undefined" ? option.LrcDom : undefined;
+	
 	this.oLRC = {
 	    ti: "", //歌曲名
 	    ar: "", //演唱者
@@ -18,22 +19,8 @@ function lyricParsingV(option){
 		Len: 0,
 		DisplayRow: 0
 	}
-	this.lrcDomElement = [];
 	this.LoadOk = false;
-	
-	this.MouseWheel = function(l){
-		let LrcDomS = document.getElementById(this.LrcDom);
-		let x = LrcDomS.style.transform;
-		let so = parseFloat(x.substr(11,x.length - 11 - 3));
-		let p = l * this.LrcHeight * this.LrcScrollLen;
-		let pxs = so + p;
-		LrcDomS.style.transform = "translateY(" + pxs + "px)";
-		this.LrcScroll = 5;
-	}
-	
-	this.GetTFValue = function(x){
-		return parseFloat(x.substr(11,x.length - 11 - 3));
-	}
+	this.ClassicKaraoke = true;
 	
 	this.timer = setInterval(() => {
 		if(this.LoadOk){
@@ -41,19 +28,7 @@ function lyricParsingV(option){
 		}
 	}, this.Refresh_interval);
 	
-	// this.ScrollTimer = setInterval(() => {
-	// 	if(this.LoadOk){
-	// 		if(this.Debug){ console.log("滚动倒计时",this.LrcScroll) }
-	// 		this.LrcScroll = this.LrcScroll - 1;
-	// 	}
-	// },1000)
-	
-	this.LrcHeight = 38; 	//词高度
-	this.LrcTop = 3;		//当前歌词距顶部距离
-	this.LrcScroll = 0;		//滚动计时
-	this.LrcScrollLen = 2;	//滚动量
-	this.TFP = 0; 			//TransformP
-	this.DisY = 0;
+	this.LrcTop = true;
 	
 	//读取歌词
 	this.ReadLrc = function(strl){
@@ -254,62 +229,44 @@ function lyricParsingV(option){
 		console.timeEnd("歌词解析");
 		if(this.Debug)console.log(this);
 		console.time("创建标签");
-		//this.lrcAppend();
 		console.timeEnd("创建标签");
 		this.LrcInfo.DisplayRow = -1;
+		document.getElementById(this.LrcDom).innerHTML = "";
+		this.LrcTop = true;
+		if(this.ClassicKaraoke){
+			let LrcDomElement = document.getElementById(this.LrcDom);
+			for (let idx = 0; idx < 3; idx++) {
+				let element1 = document.createElement("div");
+				element1.style.textAlign = "center";
+				let element2 = document.createElement("span");
+				let stc = "";
+				switch (idx) {
+					case 0:
+						stc = "lrc_classic_display_countrow";
+						element1.setAttribute("lrctype","count");
+						break;
+					case 1:
+						stc = "lrc_classic_display_nowrow";
+						element1.setAttribute("lrcrow",-1);
+						element1.setAttribute("lrctype","one");
+						element1.style.backgroundSize = "0 100%";
+						break;
+					case 2:
+						stc = "lrc_classic_display_nextrow";
+						element1.setAttribute("lrcrow",-1);
+						element1.setAttribute("lrctype","two");
+						element1.style.backgroundSize = "0 100%";
+						break;
+					default:
+						break;
+				}
+				element1.className = "lrcdisplay_classic_style " + stc;
+				element2.innerText = "";
+				element1.appendChild(element2);
+				LrcDomElement.appendChild(element1);
+			}
+		}
 		this.LoadOk = true;
-	}
-
-	this.lrcAppend = function(){
-		let LrcDom = document.getElementById(this.LrcDom);
-		this.lrcDomElement = [];
-		LrcDom.innerHTML = "";
-		for (let index = 0; index < this.LrcInfo.Len; index++) {
-			let element1 = document.createElement("div");
-			element1.style.textAlign = "center";
-			let element2 = document.createElement("span");
-			element1.className = "lrcdisplay_style";
-			element2.innerText = this.oLRC.ms.al[index];
-			element1.appendChild(element2);
-			LrcDom.appendChild(element1);
-			this.lrcDomElement.push(element1);
-		}
-		console.log(this.lrcDomElement)
-	}
-
-	this.ElementProcess = function(ProcessType,InputText){
-		// switch (ProcessType) {
-		// 	case value:
-				
-		// 		break;
-		// 	default:
-		// 		break;
-		// }
-	}
-
-	this.measureText = function(fontSize, fontFamily, text) {
-		let span = document.getElementById("testfontsizelps") || document.createElement("span");
-		let result = {
-		   width: 0,
-		   height: 0
-		};
-		span.id = "testfontsizelps";
-		span.style.visibility = "hidden";
-		span.style.fontSize = fontSize + "px";//文字大小
-		span.style.fontFamily = fontFamily;//字体
-		span.style.display = "inline-block";
-		if(!document.getElementById("testfontsizelps")){
-			document.body.appendChild(span);
-		}
-		if (typeof span.textContent != "undefined") {
-			span.textContent = text;
-		} else {
-			span.innerText = text;
-		}
-		//使用window.getComputedStyle方法获取
-		result.width = parseFloat(window.getComputedStyle(span).width) || span.offsetWidth;
-		result.height = parseFloat(window.getComputedStyle(span).height) || span.offsetHeight;
-		return result;
 	}
 	
 	this.RefLrcDisplay = function(){
@@ -367,6 +324,136 @@ function lyricParsingV(option){
 		let current = null;
 		let next = null;
 		let LrcDomElement = document.getElementById(this.LrcDom);
+		if(this.ClassicKaraoke){
+			let LrcDomx = document.getElementById(this.LrcDom).querySelectorAll("div");
+			for (let elex of LrcDomx) {
+				let ltype = elex.getAttribute("lrctype");
+				switch (ltype) {
+					case "one":
+						current = elex;
+						break;
+					case "count":
+						gone = elex;
+						break;
+					case "two":
+						next = elex;
+						break;
+					default:
+						elex.removeChild();
+						break;
+				}
+			}
+			if(this.LrcInfo.DisplayRow == -1){
+				this.LrcTop = true
+				if(!this.LrcTop){
+					if(1 > this.LrcInfo.Len){
+						current.querySelector("span").innerText= "";
+						current.setAttribute("lrcrow",-1);
+					}else{
+						current.querySelector("span").innerText = this.oLRC.ms.al[1];
+						current.setAttribute("lrcrow",-1);
+					}
+					
+					next.querySelector("span").innerText = this.oLRC.ms.al[0];
+					next.setAttribute("lrcrow",-1);
+				}else{
+					if(1 > this.LrcInfo.Len - 1){
+						next.querySelector("span").innerText = "";
+						next.setAttribute("lrcrow",-1);
+					}else{
+						next.querySelector("span").innerText = this.oLRC.ms.al[1];
+						next.setAttribute("lrcrow",-1);
+					}
+					
+					current.querySelector("span").innerText = this.oLRC.ms.al[0];
+					current.setAttribute("lrcrow",-1);
+				}
+				return
+			}
+			let nowline = -1;
+			if(!this.LrcTop){
+				nowline = parseInt(current.getAttribute("lrcrow"));
+			}else{
+				nowline = parseInt(next.getAttribute("lrcrow"));
+			}
+			if(nowline != this.LrcInfo.DisplayRow){
+				this.LrcTop = !this.LrcTop;
+
+				if(this.LrcTop){
+					current.classList.remove("lrc_classic_display_nowrow");
+					current.classList.add("lrc_classic_display_nextrow");
+					
+					next.classList.remove("lrc_classic_display_nextrow");
+					next.classList.add("lrc_classic_display_nowrow");
+
+					if(this.LrcInfo.DisplayRow + 1 > this.LrcInfo.Len){
+						current.querySelector("span").innerText= "";
+						current.setAttribute("lrcrow",-1);
+					}else{
+						current.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						current.setAttribute("lrcrow",this.LrcInfo.DisplayRow + 1);
+					}
+					
+					next.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow];
+					next.setAttribute("lrcrow",this.LrcInfo.DisplayRow);
+				}else{
+					next.classList.remove("lrc_classic_display_nowrow");
+					next.classList.add("lrc_classic_display_nextrow");
+
+					current.classList.remove("lrc_classic_display_nextrow");
+					current.classList.add("lrc_classic_display_nowrow");
+
+					if(this.LrcInfo.DisplayRow + 1 > this.LrcInfo.Len - 1){
+						next.querySelector("span").innerText = "";
+						next.setAttribute("lrcrow",-1);
+					}else{
+						next.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						next.setAttribute("lrcrow",this.LrcInfo.DisplayRow + 1);
+					}
+					
+					current.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow];
+					current.setAttribute("lrcrow",this.LrcInfo.DisplayRow);
+				}
+			}
+			if(this.LrcInfo.DisplayRow == -1){
+				return
+			}
+			let px = "";
+			if(!this.oLRC.olrc){
+				let a = this.LrcInfo.DisplayRow;
+				let p = -1;
+				let per = -1;
+				let lens = this.oLRC.ms.t[a].length;
+				for(let g=0;g<lens;g++){
+					if(this.oLRC.ms.t[a][g] < time_s){
+						p = g;
+						break
+					}
+				}
+				if((p + 1) < lens){ //判断是否到最后一个字
+					let x = 1 / lens;
+					let pxer = p * x;
+	
+					let ggp = this.oLRC.ms.t[a][p+1] - this.oLRC.ms.t[a][p];
+					let ggp2 = this.oLRC.ms.t[a][p] - time_s;
+					pxer = pxer + (x - ((ggp2 / ggp) * x));
+					per = pxer;
+				}else{
+					per = 1;
+				}
+				px = "" + (100 * per) + "% 100%";
+			}else{
+				px = "100% 100%";
+			}
+			if(!this.LrcTop){
+				current.style.backgroundSize = px;
+				next.style.backgroundSize = "0 100%";
+			}else{
+				next.style.backgroundSize = px;
+				current.style.backgroundSize = "0 100%";
+			}
+			return
+		}
 
 		if(this.LrcInfo.DisplayRow == -1){
 			let LrcDomx = document.getElementById(this.LrcDom).querySelectorAll("div");
@@ -387,6 +474,26 @@ function lyricParsingV(option){
 						break;
 				}
 			}
+			if(gone != null){
+				let gonerow = parseInt(gone.getAttribute("lrcrow"));
+				if(gonerow != -1){
+					gone.setAttribute("lrcrow",-1);
+				}
+				if(gone.querySelector("span").innerHTML != "&nbsp;"){
+					gone.querySelector("span").innerHTML = "&nbsp;";
+				}
+			}else{
+				let element1 = document.createElement("div");
+				element1.style.textAlign = "center";
+				let element2 = document.createElement("span");
+				element1.className = "lrcdisplay_style lrc_display_backrow";
+				element2.innerHTML = "&nbsp;";
+				element1.appendChild(element2);
+				element1.setAttribute("lrcrow",-1);
+				element1.setAttribute("lrctype","gone");
+				element1.style.backgroundSize = "0 100%";
+				LrcDomElement.appendChild(element1);
+			}
 			if(current != null){
 				let currentnow = parseInt(current.getAttribute("lrcrow"));
 				if(currentnow != this.LrcInfo.DisplayRow){
@@ -405,26 +512,6 @@ function lyricParsingV(option){
 				element1.appendChild(element2);
 				element1.setAttribute("lrcrow",0);
 				element1.setAttribute("lrctype","current");
-				element1.style.backgroundSize = "0 100%";
-				LrcDomElement.appendChild(element1);
-			}
-			if(gone != null){
-				let gonerow = parseInt(gone.getAttribute("lrcrow"));
-				if(gonerow != -1){
-					gone.setAttribute("lrcrow",-1);
-				}
-				if(gone.querySelector("span").innerText != ""){
-					gone.querySelector("span").innerText = "";
-				}
-			}else{
-				let element1 = document.createElement("div");
-				element1.style.textAlign = "center";
-				let element2 = document.createElement("span");
-				element1.className = "lrcdisplay_style lrc_display_backrow";
-				element2.innerText = "-";
-				element1.appendChild(element2);
-				element1.setAttribute("lrcrow",-1);
-				element1.setAttribute("lrctype","gone");
 				element1.style.backgroundSize = "0 100%";
 				LrcDomElement.appendChild(element1);
 			}
