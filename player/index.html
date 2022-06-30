@@ -181,9 +181,11 @@
 	<body>
 		<div id="app">
 			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;">
-				<h2>{{ SongInfo.title }}</h2>
-				<h4>{{ SongInfo.artist }}</h4>
-				<div id="lrcSor" style="height: 200px;width: 100%;background-color: rgb(19 19 19 / 80%);overflow: hidden;display: flex;">
+				<div>
+					<p style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;">{{ SongInfo.title }}</p>
+					<p style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;">{{ SongInfo.artist }}</p>
+				</div>
+				<div id="lrcSor" style="height: 200px;width: 100%;background-color: rgb(19 19 19 / 60%);overflow: hidden;display: flex;position: absolute;bottom: 0;">
 					<div id="lrcDomList" class="lrcdisplay">
 						
 					</div>
@@ -215,10 +217,15 @@
 			<div id="rglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
 				<div style="width: auto;height: 100%;" onclick="rightlist()"></div>
 				<div id="rglistn" style="position: fixed;right: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
-					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">播放列表</div>
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">所有歌曲</div>
+					<div style="display: flex;
+						justify-content: center;
+						height: 2rem;">
+						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;"/><button @click="search()" style="width: 4rem;">搜索</button>
+					</div>
 					<div class="div-list" id="songlist">
-						<p v-for="(value, name) in list" @click="clicklist(name)">
-							{{ value[1].artist }} - {{ value[1].title }}
+						<p v-for="(item,i) in searchresult" @click="addlist(i)">
+							{{ item.artist }} - {{ item.title }}
 						</p>
 					</div>
 				</div>
@@ -226,10 +233,14 @@
 			<div id="lglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
 				<div style="width: auto;height: 100%;" onclick="lightlist()"></div>
 				<div id="lglistn" style="position: fixed;left: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
-					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">播放列表</div>
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">待播放列表</div>
 					<div class="div-list" id="playsonglist">
-						<p v-for="(items,index) in playlist" @click="clicklist(index)">
-							{{ items.info.artist }} - {{ items.info.title }}
+						<p v-for="(item,index) in playlist" @click="clicklist(index)" :draggable="true"
+						@dragstart="dragstart(item)"
+						@dragenter="dragenter(item,$event)"
+						@dragend="dragend(item,$event)"
+						@dragover="dragover($event)">
+							{{ item.song.artist }} - {{ item.song.title }}
 						</p>
 					</div>
 				</div>
@@ -258,7 +269,7 @@
 		
 		var player = new Player({
 			api:"/song.json",
-			debug:false
+			debug:true
 		});
 		console.log(player);
 		player.initlist();
@@ -266,32 +277,44 @@
 		var vm = new Vue({
 			el: "#app",
 			data: {
+				keyword: "",
 				SongInfo:{
 					title: 'KaraokePlayerDemo',
 					artist: '-',
 					album: '-',
 				},
+				nowSelect: -1,
 				NowPlay: {
 					now: "00:00",
 					len: "00:00",
 				},
 				list:[],
-				playlist:[]
+				searchresult:[],
+				playlist:[],
+				oldData:null, // 开始排序时按住的旧数据
+    			newData:null // 拖拽过程的数据
+			},
+			watch: {
+				keyword(newVal) {
+					let arr = this.list;
+					if (newVal.length == 0) {
+						this.searchresult = arr;
+					}
+				},
 			},
 			methods: {
 				clicklist(index){
-					console.log()
+					this.nowSelect = index;
+					let p = this.playlist[index];
 					player.init();
-					player.play(index);
-					
-					/*
-					let p = player.playPercentage() * 100;
-					let duration = player.duration()
-					let seek = player.seek()
-					vm.$data.NowPlay.now = secondToDate(seek)
-					vm.$data.NowPlay.len = secondToDate(duration)
-					document.getElementById('seekdisplay').style.width = p + '%';
-					*/
+					player.play(p.index);
+				},
+				addlist(index){
+					console.log(this.list[index],index)
+					this.playlist.push({
+						index:index,
+						song:this.list[index]
+					})
 				},
 				btnnext(){
 					player.next();
@@ -310,6 +333,50 @@
 				},
 				updatalist(newlist){
 					this.list = newlist;
+					this.searchresult = newlist;
+				},
+				dragstart(value) {
+					this.oldData = value
+				},
+				dragenter(value, e) {
+					// 记录移动过程中信息
+					this.newData = value
+					e.preventDefault()
+				},
+				dragend(value, e) {
+					console.log()
+					// 拖拽最终操作
+					if (this.oldData !== this.newData) {
+						let oldIndex = this.playlist.indexOf(this.oldData)
+						let newIndex = this.playlist.indexOf(this.newData)
+						if(nowSelect== oldIndex){
+							nowSelect = newIndex;
+						}
+						let newItems = [...this.playlist]
+						// 删除老的节点
+						newItems.splice(oldIndex, 1)
+						// 在列表中目标位置增加新的节点
+						newItems.splice(newIndex, 0, this.oldData)
+						this.playlist = [...newItems]
+					}
+				},
+				dragover(e) {
+					// 拖动事件（主要是为了拖动时鼠标光标不变为禁止）
+					e.preventDefault()
+				},
+				search() {
+					// 1、拿到当前所有的数据
+					const { keyword, sortStr, list } = this;
+					// 2、根据搜索条件查询
+					let arr = list.filter((item) => item.title.indexOf(keyword) !== -1 || item.artist.indexOf(keyword) !== -1);
+					console.log(arr);
+					this.searchresult = arr;
+				},
+				nextpl(){
+					this.playlist.splice(this.nowSelect,1);
+					if(this.playlist.length>0){
+						this.clicklist(this.nowSelect);
+					}
 				}
 			},
 			mounted(){
@@ -357,12 +424,31 @@
 		player.onplaysonginfo = function(e){
 			vm.$data.SongInfo.title = e.title;
 			vm.$data.SongInfo.artist = e.artist;
+
+			if ('mediaSession' in navigator){
+				navigator.mediaSession.metadata = new MediaMetadata({
+					title: e.title,
+					artist: e.artist
+				});
+			}
 		}
 
 		player.onupdatasonglist = function(e){
 			vm.updatalist(e);
 		}
 
+		player.onplayend = function(e){
+			vm.nextpl();
+		}
+
+		if ('mediaSession' in navigator){
+			navigator.mediaSession.setActionHandler('play', function() {
+				player.play();
+			});
+			navigator.mediaSession.setActionHandler('pause', function() {
+				player.pause();
+			});
+		}
 		
 		setInterval(function(){
 			let p = player.playPercentage() * 100;

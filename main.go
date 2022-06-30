@@ -1,10 +1,8 @@
 package main
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,11 +10,6 @@ import (
 
 	"github.com/bogem/id3v2"
 )
-
-type ListSongHash struct {
-	Hash string    `json:"hash"`
-	Info *SongType `json:"info"`
-}
 
 //SongType 歌曲信息
 type SongType struct {
@@ -34,7 +27,7 @@ func main() {
 }
 
 func scansong() {
-	result := make([]ListSongHash, 0)
+	result := make([]SongType, 0)
 	files, err := ioutil.ReadDir("./music")
 	if err != nil {
 		log.Fatal(err)
@@ -74,10 +67,7 @@ func scansong() {
 					tmp.Music = "music/" + filename
 					tmp.Lrc = "music/" + filename[:len(filename)-3] + "lrc"
 				}
-				tmp2 := ListSongHash{}
-				tmp2.Info = &tmp
-				tmp2.Hash = MD5Enc(filename)
-				result = append(result, tmp2)
+				result = append(result, tmp)
 			}
 		}
 	}
@@ -126,11 +116,4 @@ func FileisHave(s string) bool {
 		rs = true
 	}
 	return rs
-}
-
-//MD5Enc 对字符串进行MD5哈希
-func MD5Enc(data string) string {
-	t := md5.New()
-	io.WriteString(t, data)
-	return fmt.Sprintf("%x", t.Sum(nil))
 }

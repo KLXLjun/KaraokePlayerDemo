@@ -14,13 +14,13 @@ function lyricParsingV(option){
 	    offset: 0, //时间补偿值，单位毫秒，用于调整歌词整体位置
 	    ms: [] //歌词数组{t:时间,c:歌词}
 	};
-	this.RefreshInterval = typeof option.Reftime != "undefined" ? option.Reftime : 200;
+	this.RefreshInterval = typeof option.Reftime != "undefined" ? option.Reftime : 100;
 	this.LrcInfo = {
 		Len: 0,
 		DisplayRow: 0
 	}
 	this.LoadOk = false;
-	this.ClassicKaraoke = true;
+	this.ClassicKaraoke = false;
 	
 	this.timer = setInterval(() => {
 		if(this.LoadOk){
@@ -145,19 +145,6 @@ function lyricParsingV(option){
 			    }
 			}
 			this.oLRC.ms = lpdall;
-			//let i = this.oLRC.ms.length;
-			
-			//处理排序
-			// while (i > 0) {
-			// 	for (let j = 0; j < i - 1; j++) {
-			// 		if (this.oLRC.ms[j].t > this.oLRC.ms[j + 1].t || this.oLRC.ms[j].t == this.oLRC.ms[j + 1].t) {
-			// 			let temp_exc = this.oLRC.ms[j];
-			// 			this.oLRC.ms[j] = this.oLRC.ms[j + 1];
-			// 			this.oLRC.ms[j + 1] = temp_exc;
-			// 		}
-			// 	}
-			// 	i--;
-			// }
 			
 			this.LrcInfo.Len = this.oLRC.ms.t.length;
 		}else{
@@ -568,6 +555,33 @@ function lyricParsingV(option){
 			domnow = parseInt(current.getAttribute("lrcrow"));
 			if(domnow != this.LrcInfo.DisplayRow){
 				if(next != null){
+					next.setAttribute("lrctype","current");
+					next.setAttribute("lrcrow",this.LrcInfo.DisplayRow);
+					next.classList.add("lrc_display_nowrow");
+					next.classList.remove("lrc_display_nextrow");
+					next.classList.remove("lrc_display_backrow");
+					current.setAttribute("lrctype","gone");
+					current.setAttribute("lrcrow",this.LrcInfo.DisplayRow - 1);
+					current.classList.add("lrc_display_backrow");
+					if(gone != null){
+						gone.remove();
+					}
+					current.classList.remove("lrc_display_nowrow");
+					current.classList.remove("lrc_display_nextrow");
+					current.style.backgroundSize = "0 100%";
+				}else{
+					let element1 = document.createElement("div");
+					element1.style.textAlign = "center";
+					let element2 = document.createElement("span");
+					element1.className = "lrcdisplay_style lrc_display_nowrow";
+					element2.innerText = this.oLRC.ms.al[0];
+					element1.appendChild(element2);
+					element1.setAttribute("lrcrow",0);
+					element1.setAttribute("lrctype","current");
+					element1.style.backgroundSize = "0 100%";
+					LrcDomElement.appendChild(element1);
+					next = element1;
+
 					next.setAttribute("lrctype","current");
 					next.setAttribute("lrcrow",this.LrcInfo.DisplayRow);
 					next.classList.add("lrc_display_nowrow");

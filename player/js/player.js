@@ -10,14 +10,12 @@ var Player = function(option){
 		volume: 1,
 		playing:false,
 		paused:true,
-		currentIndexHash:"",
 		currentIndex:0,
 		muted:false,
 		loop:false
 	}
 
-	this.listmap = new Map();
-	this.listhash = [];
+	this.list = [];
 	
 	this.sound = document.getElementById("audioElement");
 	this.lrPar;
@@ -25,6 +23,7 @@ var Player = function(option){
 	this.reflist = typeof option.reflist == 'undefined' ? function(){} : option.reflist;
 	this.debug = typeof option.debug == 'undefined' ? false : option.debug;
 	this.onplaysonginfo = typeof option.onplay == 'undefined' ? function(){} : option.onplay;
+	this.onplayend = typeof option.onplayend == 'undefined' ? function(){} : option.onplayend;
 	this.api = typeof option.api == 'undefined' ? "" : option.api;
 	this.apiconfig = {
 		nowloadpage: 0,
@@ -37,14 +36,18 @@ var Player = function(option){
 		ajaxRequest.open('GET', this.api, true);
 		ajaxRequest.responseType = 'json';
 		ajaxRequest.onload = () => {
+			this.list = []
 			console.log(ajaxRequest.response)
 			let dt = ajaxRequest.response;
 			this.apiconfig.songlen = dt.length;
+			let con = 0;
 			dt.forEach(element => {
-				this.listmap.set(element.hash,element.info);
-				this.listhash.push(element.hash);
+				let p = element;
+				p.id = con;
+				this.list.push(element);
+				con++
 			});
-			this.onupdatasonglist(this.listmap);
+			this.onupdatasonglist(this.list);
 		}
 		ajaxRequest.send();
 	}
@@ -81,22 +84,26 @@ var Player = function(option){
 				this.sound.play();
 			}else{
 				this.pause();
-				let hash = this.listhash[index];
-				let selectx = this.listmap.get(hash);
-				if(selectx == undefined){
+				let selectx = null;
+				this.list.forEach(element => {
+					if(element.id == index){
+						selectx = element;
+					}
+				});
+				if(selectx==null){
+					console.log("id不正确",index)
 					return
 				}
-				this.playerStatus.currentIndexHash = hash;
-				this.playerStatus.currentIndex = index;
+				this.playerStatus.currentIndex = selectx.id;
 				this.sound.src = selectx.music;
-				this.onplaysonginfo(selectx)
+				this.onplaysonginfo(selectx);
 
 				if(!this.lrPar){
 					this.lrPar = new lyricParsingV({
 						Audio: this,	//音频标签
 						LrcDom: "lrcDomList",
 						debug:false,	//调试模式
-						reftime:32,		//画布刷新时间(毫秒)
+						reftime:15,		//画布刷新时间(毫秒)
 					});
 				}
 				
@@ -125,10 +132,11 @@ var Player = function(option){
 	}
 
 	this.next = () => {
-		if((this.apiconfig.songlen > this.playerStatus.currentIndex + 1)){
-			this.playerStatus.currentIndex = this.playerStatus.currentIndex + 1
-			this.play(this.playerStatus.currentIndex);
-		}
+		// if((this.apiconfig.songlen > this.playerStatus.currentIndex + 1)){
+		// 	this.playerStatus.currentIndex = this.playerStatus.currentIndex + 1
+		// 	this.play(this.playerStatus.currentIndex);
+		// }
+		this.onplayend();
 	}
 
 	this.duration = () => {
