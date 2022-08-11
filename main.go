@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/bogem/id3v2"
@@ -13,11 +15,12 @@ import (
 
 //SongType 歌曲信息
 type SongType struct {
-	Title  string `json:"title"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
-	Music  string `json:"music"`
-	Lrc    string `json:"lrc"`
+	Title   string `json:"title"`
+	Artist  string `json:"artist"`
+	Album   string `json:"album"`
+	Music   string `json:"music"`
+	Lrc     string `json:"lrc"`
+	Picture string `json:"picture"`
 }
 
 func main() {
@@ -37,8 +40,9 @@ func scansong() {
 		if !file.IsDir() {
 			filename := file.Name()
 			if HasSuffix(filename, ".mp3") {
+				fileNameOnly := strings.TrimSuffix(filename, path.Ext(filename))
 				lrchave := false
-				i := "./music/" + filename[:len(filename)-3] + "lrc"
+				i := "./music/" + fileNameOnly + ".lrc"
 				if FileisHave(i) {
 					lrchave = true
 				}
@@ -53,19 +57,31 @@ func scansong() {
 				}
 				defer tag.Close()
 
+				havepic := false
+				pictures := tag.GetFrames(tag.CommonID("Attached picture"))
+				for _, f := range pictures {
+					pic, ok := f.(id3v2.PictureFrame)
+					if !ok {
+						log.Fatal("Couldn't assert picture frame")
+					}
+					spic(pic.Picture, fileNameOnly+".png")
+					havepic = true
+				}
+
 				tmp := SongType{}
 				if len(tag.Title()) < 1 {
 					tmp.Title = filename[:len(filename)-4]
 					tmp.Artist = tag.Artist()
 					tmp.Album = tag.Album()
-					tmp.Music = "music/" + filename
-					tmp.Lrc = "music/" + filename[:len(filename)-3] + "lrc"
 				} else {
 					tmp.Title = tag.Title()
 					tmp.Artist = tag.Artist()
 					tmp.Album = tag.Album()
-					tmp.Music = "music/" + filename
-					tmp.Lrc = "music/" + filename[:len(filename)-3] + "lrc"
+				}
+				tmp.Music = "music/" + filename
+				tmp.Lrc = "music/" + fileNameOnly + ".lrc"
+				if havepic {
+					tmp.Picture = fileNameOnly + ".png"
 				}
 				result = append(result, tmp)
 			}
@@ -87,6 +103,21 @@ func save(input []byte) error {
 	if os.IsNotExist(FileErr) || FileErr == nil {
 		time.Sleep(500)
 		file1, err5 := os.Create("./song.json")
+		defer file1.Close()
+		if err5 != nil {
+			return err5
+		}
+		file1.Write(input)
+		return nil
+	}
+	return FileErr
+}
+
+func spic(input []byte, path string) error {
+	FileErr := os.Remove("./music/" + path)
+	if os.IsNotExist(FileErr) || FileErr == nil {
+		time.Sleep(500)
+		file1, err5 := os.Create("./music/" + path)
 		defer file1.Close()
 		if err5 != nil {
 			return err5

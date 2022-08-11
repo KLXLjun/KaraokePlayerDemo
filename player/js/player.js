@@ -103,7 +103,7 @@ var Player = function(option){
 						Audio: this,	//音频标签
 						LrcDom: "lrcDomList",
 						debug:false,	//调试模式
-						reftime:15,		//画布刷新时间(毫秒)
+						reftime:8,		//画布刷新时间(毫秒)
 					});
 				}
 				

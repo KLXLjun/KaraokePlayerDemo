@@ -14,7 +14,7 @@ function lyricParsingV(option){
 	    offset: 0, //时间补偿值，单位毫秒，用于调整歌词整体位置
 	    ms: [] //歌词数组{t:时间,c:歌词}
 	};
-	this.RefreshInterval = typeof option.Reftime != "undefined" ? option.Reftime : 100;
+	this.RefreshInterval = typeof option.reftime != "undefined" ? option.reftime : 50;
 	this.LrcInfo = {
 		Len: 0,
 		DisplayRow: 0
@@ -144,8 +144,28 @@ function lyricParsingV(option){
 			        }
 			    }
 			}
+			if (lpdall.t.length > 2) {
+				for (let io = 0; io < lpdall.t.length - 1; io++) {
+					let hv = false
+					for (let ip = 0; ip < lpdall.t.length - 1 - io; ip++) {
+						if(lpdall.t[ip] > lpdall.t[ip + 1]){
+							let tmp1 = lpdall.t[ip];
+							let tmp2 = lpdall.al[ip];
+
+							lpdall.t[ip] = lpdall.t[ip + 1];
+							lpdall.al[ip] = lpdall.al[ip + 1];
+
+							lpdall.t[ip + 1] = tmp1;
+							lpdall.al[ip + 1] = tmp2;
+							hv = true;
+						}
+					}
+					if(!hv){
+						break
+					}
+				}
+		   	}
 			this.oLRC.ms = lpdall;
-			
 			this.LrcInfo.Len = this.oLRC.ms.t.length;
 		}else{
 			let lpdall = {
@@ -377,7 +397,11 @@ function lyricParsingV(option){
 						current.querySelector("span").innerText= "";
 						current.setAttribute("lrcrow",-1);
 					}else{
-						current.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						if(this.LrcInfo.DisplayRow + 1 < this.oLRC.ms.al.length){
+							current.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						}else{
+							current.querySelector("span").innerText = "";
+						}
 						current.setAttribute("lrcrow",this.LrcInfo.DisplayRow + 1);
 					}
 					
@@ -394,7 +418,11 @@ function lyricParsingV(option){
 						next.querySelector("span").innerText = "";
 						next.setAttribute("lrcrow",-1);
 					}else{
-						next.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						if(this.LrcInfo.DisplayRow + 1 < this.oLRC.ms.al.length){
+							next.querySelector("span").innerText = this.oLRC.ms.al[this.LrcInfo.DisplayRow + 1];
+						}else{
+							next.querySelector("span").innerText = "";
+						}
 						next.setAttribute("lrcrow",this.LrcInfo.DisplayRow + 1);
 					}
 					
@@ -414,7 +442,6 @@ function lyricParsingV(option){
 				for(let g=0;g<lens;g++){
 					if(this.oLRC.ms.t[a][g] < time_s){
 						p = g;
-						break
 					}
 				}
 				if((p + 1) < lens){ //判断是否到最后一个字

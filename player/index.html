@@ -284,6 +284,7 @@
 					album: '-',
 				},
 				nowSelect: -1,
+				nowPlayIndex: -1,
 				NowPlay: {
 					now: "00:00",
 					len: "00:00",
@@ -304,8 +305,16 @@
 			},
 			methods: {
 				clicklist(index){
-					this.nowSelect = index;
+					this.nowPlayIndex = index;
 					let p = this.playlist[index];
+					for (let iu = 0; iu < this.playlist.length; iu++) {
+						let p = this.playlist[iu];
+						if(index == iu){
+							this.playlist[iu].now = true;
+						}else{
+							this.playlist[iu].now = false;
+						}
+					}
 					player.init();
 					player.play(p.index);
 				},
@@ -313,7 +322,8 @@
 					console.log(this.list[index],index)
 					this.playlist.push({
 						index:index,
-						song:this.list[index]
+						song:this.list[index],
+						now:false,
 					})
 				},
 				btnnext(){
@@ -349,8 +359,8 @@
 					if (this.oldData !== this.newData) {
 						let oldIndex = this.playlist.indexOf(this.oldData)
 						let newIndex = this.playlist.indexOf(this.newData)
-						if(nowSelect== oldIndex){
-							nowSelect = newIndex;
+						if(this.nowSelect== oldIndex){
+							this.nowSelect = newIndex;
 						}
 						let newItems = [...this.playlist]
 						// 删除老的节点
@@ -373,9 +383,19 @@
 					this.searchresult = arr;
 				},
 				nextpl(){
-					this.playlist.splice(this.nowSelect,1);
+					let i = -1;
+					for (let ym = 0; ym < this.playlist.length; ym++) {
+						let element = this.playlist[ym];
+						if(element.now == true){
+							i = ym;
+							break;
+						}
+					}
+					this.playlist.splice(i,1);
+					console.log(i,this.playlist)
 					if(this.playlist.length>0){
-						this.clicklist(this.nowSelect);
+						this.nowPlayIndex = i;
+						this.clicklist(this.nowPlayIndex);
 					}
 				}
 			},
