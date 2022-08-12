@@ -14,6 +14,7 @@ function lyricParsingV(option){
 	    offset: 0, //时间补偿值，单位毫秒，用于调整歌词整体位置
 	    ms: [] //歌词数组{t:时间,c:歌词}
 	};
+	this.Lastlist = [];
 	this.RefreshInterval = typeof option.reftime != "undefined" ? option.reftime : 50;
 	this.LrcInfo = {
 		Len: 0,
@@ -34,6 +35,7 @@ function lyricParsingV(option){
 	this.ReadLrc = function(strl){
 		this.LoadOk = false;
 		console.time('歌词解析');
+		this.Lastlist = [];
 		this.oLRC = {
 			ti: "", //歌曲名
 			ar: "", //演唱者
@@ -273,6 +275,22 @@ function lyricParsingV(option){
 				LrcDomElement.appendChild(element1);
 			}
 		}
+		if(this.oLRC.olrc){
+			let next = 0;
+			for (let index = 0; index < this.LrcInfo.Len; index++) {
+				let p = this.oLRC.ms.t[index];
+				this.Lastlist.push((p - next).toFixed(2));
+				next = p;
+			}
+		}else{
+			let next = 0;
+			for (let index = 0; index < this.LrcInfo.Len; index++) {
+				let p = this.oLRC.ms.t[index][0];
+				this.Lastlist.push((p - next).toFixed(2));
+				next = p;
+			}
+		}
+		console.log(this.Lastlist);
 		this.LoadOk = true;
 	}
 	
@@ -325,6 +343,42 @@ function lyricParsingV(option){
 					}
 				}
 			}
+		}
+
+		if(this.LrcInfo.DisplayRow + 1 < this.LrcInfo.Len){
+			let next = 0;
+			if(this.oLRC.olrc){
+				next = this.oLRC.ms.t[this.LrcInfo.DisplayRow + 1];
+			}else{
+				next = this.oLRC.ms.t[this.LrcInfo.DisplayRow + 1][0];
+			}
+			let p = this.Lastlist[this.LrcInfo.DisplayRow + 1]
+			let o = (next - time_s).toFixed(1);
+			if(this.LrcInfo.DisplayRow == -1 &&next - time_s < 6){
+				document.getElementById("lasttimeprocess").style.height = "0.5rem";
+				document.getElementById("lasttime").style.display = "block";
+				document.getElementById("lasttime").innerText = o + " s";
+				document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
+			}else if(next - time_s < 6 && p > 6){
+				document.getElementById("lasttimeprocess").style.height = "0.5rem";
+				document.getElementById("lasttime").style.display = "block";
+				document.getElementById("lasttime").innerText = o + " s";
+				document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
+			}else{
+				document.getElementById("lasttimeprocess").style.height = "0rem";
+				document.getElementById("lasttime").style.display = "none";
+				document.getElementById("lasttimeprocess").style.width = "0%";
+			}
+			// if(this.LrcInfo.DisplayRow == -1){
+			// 	document.getElementById("lasttimeprocess").style.height = "0.5rem";
+			// 	document.getElementById("lasttime").style.display = "block";
+			// 	document.getElementById("lasttime").innerText = o + " s";
+			// 	document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
+			// }
+		}else{
+			document.getElementById("lasttimeprocess").style.height = "0rem";
+			document.getElementById("lasttime").style.display = "none";
+			document.getElementById("lasttimeprocess").style.width = "0%";
 		}
 		
 		let gone = null;

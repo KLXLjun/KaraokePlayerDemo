@@ -185,7 +185,9 @@
 					<p style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;">{{ SongInfo.title }}</p>
 					<p style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;">{{ SongInfo.artist }}</p>
 				</div>
-				<div id="lrcSor" style="height: 200px;width: 100%;background-color: rgb(19 19 19 / 60%);overflow: hidden;display: flex;position: absolute;bottom: 0;">
+				<div id="lrcSor" style="height: 240px;width: 100%;background-color: rgb(19 19 19 / 60%);overflow: hidden;display: flex;position: absolute;bottom: 0;justify-content: center;flex-direction: column;">
+					<div id="lasttimeprocess" style="align-self: center;margin: 0px auto;background-color: coral;height: 0rem;position: absolute;top: 0;width: 100%;"></div>
+					<div id="lasttime" style="align-self: center;margin: 0 auto;color: #FFFFFF;font-size: 1.8rem;font-family: fantasy;position: absolute;top: 1.2rem;display: none;">10 s</div>
 					<div id="lrcDomList" class="lrcdisplay">
 						
 					</div>
@@ -205,6 +207,7 @@
 							<div class="mdi mdi-stop" @click="btnstop()"></div>
 						</div>
 						<div class="ctrlsx" style="float: right;">
+							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;"></div>
 							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;"></div>
 							<input id="vols" type="range" max="100" min="0" value="100" style="margin-right: 32px;width: 50%;"/>
 							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>

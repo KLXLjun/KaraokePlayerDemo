@@ -102,7 +102,7 @@ var Player = function(option){
 					this.lrPar = new lyricParsingV({
 						Audio: this,	//音频标签
 						LrcDom: "lrcDomList",
-						debug:false,	//调试模式
+						Debug:true,	//调试模式
 						reftime:8,		//画布刷新时间(毫秒)
 					});
 				}
