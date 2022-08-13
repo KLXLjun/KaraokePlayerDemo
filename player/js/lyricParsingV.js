@@ -287,7 +287,7 @@ function lyricParsingV(option){
 			for (let index = 0; index < this.LrcInfo.Len; index++) {
 				let p = this.oLRC.ms.t[index][0];
 				this.Lastlist.push((p - next).toFixed(2));
-				next = p;
+				next = this.oLRC.ms.t[index][this.oLRC.ms.t[index].length - 1];
 			}
 		}
 		console.log(this.Lastlist);
@@ -628,7 +628,7 @@ function lyricParsingV(option){
 					next = elex;
 					break;
 				default:
-					elex.removeChild();
+					elex.remove();
 					break;
 			}
 		}

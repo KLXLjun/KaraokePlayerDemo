@@ -15,6 +15,13 @@ var Player = function(option){
 		loop:false
 	}
 
+	this.ClassicKaraoke = false;
+	let x = localStorage.getItem("ClassicKaraoke");
+	if(typeof x == "Boolean"){
+		this.ClassicKaraoke = x;
+	}
+	console.log("经典卡拉OK输出:",this.ClassicKaraoke);
+
 	this.list = [];
 	
 	this.sound = document.getElementById("audioElement");
@@ -50,6 +57,12 @@ var Player = function(option){
 			this.onupdatasonglist(this.list);
 		}
 		ajaxRequest.send();
+	}
+
+	this.setClassicKaraoke = (i) => {
+		this.ClassicKaraoke = i;
+		localStorage.setItem("ClassicKaraoke",i);
+		console.log("经典卡拉OK输出:",this.ClassicKaraoke);
 	}
 
 	this.init = () => {
@@ -106,6 +119,8 @@ var Player = function(option){
 						reftime:8,		//画布刷新时间(毫秒)
 					});
 				}
+
+				this.lrPar.ClassicKaraoke = this.ClassicKaraoke;
 				
 				let ajaxRequest = new XMLHttpRequest();
 				ajaxRequest.open('GET', selectx.lrc, true);

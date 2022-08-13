@@ -3,13 +3,25 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>KaraokePlayerDemo</title>
+		<link rel="stylesheet" href="css/7.css">
 		<script src="js/vue.min.js" type="text/javascript" charset="utf-8"></script>
 		<script src="js/lyricParsingV.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="css/materialdesignicons.min.css">
 		<link rel="stylesheet" href="css/lrc.css"/>
 		<style>
 			*{
-				font-family: sans-serif;
+				font-family: 'Microsoft YaHei',Arial,Helvetica,Sans-Serif;;
+			}
+
+			#app{
+				width: 100%;
+				height: 100%;
+				position: fixed;
+				border: 0;
+				margin: 0;
+				padding: 0;
+				left: 0;
+				top: 0;
 			}
 			
 			.toptip {
@@ -55,97 +67,9 @@
 			}
 		</style>
 		<style>
-			::-webkit-scrollbar {
-				width: .5rem;
-				height: .5rem;
-				background: hsla(0, 0%, 100%, 0.6);
-			}
-					
-			::-webkit-scrollbar-track {
-				border-radius: 0;
-			}
-					
-			::-webkit-scrollbar-thumb {
-				border-radius: 0;
-				background-color: rgba(95, 95, 95, .4);
-				transition: all .2s;
-				float: right;
-					
-				&:hover {
-					background-color: rgba(95, 95, 95, .7);
-				}
-			}
-		</style>
-		<style>
-			/*清除原有样式*/
-			input[type=range] {
-			    -webkit-appearance: none;
-			    width: 16vw;
-			}
-			input[type=range]::-webkit-slider-thumb {
-			    -webkit-appearance: none;
-			}
-			/*设置滑动条的样式*/
-			input[type=range]::-webkit-slider-runnable-track {
-			   height: 0.3vh;
-			   background: linear-gradient(90deg,#ff4f16,#f77850);
-			}
-			input[type=range]::-moz-range-track {
-			   height: 0.3vh;
-			   background: linear-gradient(90deg,#ff4f16,#f77850);
-			}
-			/*去除获取焦点时的边框*/ 
-			input[type=range]:focus {
-			    outline: none;
-			}
-			/*设置滑块样式*/
-			input[type=range]::-webkit-slider-thumb {
-			    -webkit-appearance: none;
-			    height: 1.0vw;
-			    width: 1.4vh;
-			    background: #509EFE;
-			    margin-top: -5px; 
-			} 
-			input[type=range]::-moz-range-thumb  {
-			    -webkit-appearance: none;
-			    height: 1.0vw;
-			    width: 1.4vh;
-			    background: #509EFE;
-			    margin-top: -5px; 
-			}
-			/*IE下*/
-			input[type=range] {
-			    -webkit-appearance: none;
-			    width: 16vw;
-			   background: #509EFE;
-			}
-			/*设置IE下滑动条的样式*/
-			input[type=range]::-ms-track {
-			    height: 8px;
-			    border-color: transparent; /*去除原有边框*/
-			    color: transparent; /*去除轨道内的竖线*/
-			    background: #E6EFFB;
-			}
-			/*设置IE下滑块样式*/
-			input[type=range]::-ms-thumb {
-			    height: 8px;
-			    width: 35px;
-			    background: #61A5FF;   
-			}
-			 
-			input[type=range]:focus::-ms-fill-lower {
-			    background: #E6EFFB;
-			    border: none;
-			}
-			input[type=range]:focus::-ms-fill-upper {
-			    background: #E6EFFB;
-			    border: none;
-			}
-		</style>
-		<style>
 			.div-list{
 				width: 100%;
-				height: calc(100% - 48px);
+				height: calc(100% - 48px - 32px);
 				overflow: scroll;
 				margin: 0;
 				overflow-x: hidden;
@@ -158,6 +82,7 @@
 				transition: all .2s ease;
 				cursor: pointer;
 				margin: 0;
+				font-size: 14px;
 			}
 			
 			.div-list p:hover{
@@ -176,11 +101,15 @@
 				cursor: pointer;
 				padding: 0 2px;
 			}
+
+			.nowplay{
+				background-color: #39863e;
+			}
 		</style>
 	</head>
 	<body>
 		<div id="app">
-			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;">
+			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;" >
 				<div>
 					<p style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;">{{ SongInfo.title }}</p>
 					<p style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;">{{ SongInfo.artist }}</p>
@@ -194,7 +123,7 @@
 				</div>
 			</div>
 			
-			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 100;">
+			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 30;">
 				<div style="width: 100%;height: 100%;">
 					<div style="margin-top: 10px;padding-left: 40px;padding-right: 40px;">
 						<div id="cur_time" style="height: 4px;position: relative;margin: 4px 0px 4px;cursor: pointer;width: 100%;margin-left: 4px;margin-right: 4px;margin: 16px 0;">
@@ -207,14 +136,17 @@
 							<div class="mdi mdi-stop" @click="btnstop()"></div>
 						</div>
 						<div class="ctrlsx" style="float: right;">
-							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;"></div>
-							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;"></div>
-							<input id="vols" type="range" max="100" min="0" value="100" style="margin-right: 32px;width: 50%;"/>
+							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="document.getElementById('setting').style.display = 'block';"></div>
+							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="volopen()"></div>
 							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>
 							<div onclick="rightlist()" class="mdi mdi-playlist-music rightbutton" ></div>
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<div id="volinput" style="position: fixed;bottom: 72px;width: 172px;right: 48px;height: 32px;display: flex;justify-content: center;background-color: #b3b3b3;z-index: 50;display: none;">
+				<input id="vols" type="range" max="100" min="0" value="100" style="width: 128px;margin: 0 auto;"/>
 			</div>
 			
 			<div id="rglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
@@ -224,7 +156,7 @@
 					<div style="display: flex;
 						justify-content: center;
 						height: 2rem;">
-						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;"/><button @click="search()" style="width: 4rem;">搜索</button>
+						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 32px;"/><button @click="search()" style="width: 4rem;">搜索</button>
 					</div>
 					<div class="div-list" id="songlist">
 						<p v-for="(item,i) in searchresult" @click="addlist(i)">
@@ -237,14 +169,46 @@
 				<div style="width: auto;height: 100%;" onclick="lightlist()"></div>
 				<div id="lglistn" style="position: fixed;left: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
 					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">待播放列表</div>
-					<div class="div-list" id="playsonglist">
-						<p v-for="(item,index) in playlist" @click="clicklist(index)" :draggable="true"
+					<div class="div-list" id="playsonglist" style="height: calc(100% - 48px)!important;">
+						<p v-for="(item,index) in playlist" @click="clicklist(index)" :draggable="true" :class="item.now == true ? 'nowplay' : ''"
 						@dragstart="dragstart(item)"
 						@dragenter="dragenter(item,$event)"
 						@dragend="dragend(item,$event)"
 						@dragover="dragover($event)">
 							{{ item.song.artist }} - {{ item.song.title }}
 						</p>
+					</div>
+				</div>
+			</div>
+
+			<div id="setting" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 15;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;">
+				<div class="background" style="position: fixed;left: calc(50% - 240px);top: calc(25%);">
+					<div class="window glass" style="width: 480px;">
+					  <div class="title-bar">
+							<div class="title-bar-text">设置</div>
+							<div class="title-bar-controls">
+						  		<button aria-label="Close" onclick="document.getElementById('setting').style.display = 'none';"></button>
+							</div>
+					  	</div>
+					  	<div class="window-body">
+							<menu role="tablist">
+								<button role="tab" aria-controls="setting" aria-selected="true">设置</button>
+								<button role="tab" aria-controls="about">关于</button>
+							</menu>
+							<article role="tabpanel" id="setting">
+								<p>
+									<div class="field-row">
+										<input type="checkbox" id="ClassicKaraokeOpen" onclick="SetClassicKaraokeMode()">
+										<label for="ClassicKaraokeOpen">经典卡拉OK显示模式 (播放下一首歌时生效)</label>
+									</div>
+								</p>
+							</article>
+							<article role="tabpanel" hidden id="about">
+								<h3 style="margin-top: 0;">KaraokePlayerDemo</h3>
+								<p>项目链接:<a href="https://github.com/KLXLjun/KaraokePlayerDemo">KaraokePlayerDemo</a></p>
+								<p>注意:在本项目Demo中,如果演示歌曲侵权,请与我联系,我会将其删除</p>
+							</article>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -271,11 +235,18 @@
 		};
 		
 		var player = new Player({
-			api:"/song.json",
+			api:"song.json",
 			debug:true
 		});
 		console.log(player);
 		player.initlist();
+
+		function SetClassicKaraokeMode(){
+			let x = document.getElementById("ClassicKaraokeOpen").checked;
+			if(typeof x == "boolean"){
+				player.setClassicKaraoke(x);
+			}
+		}
 		
 		var vm = new Vue({
 			el: "#app",
@@ -397,7 +368,7 @@
 					this.playlist.splice(i,1);
 					console.log(i,this.playlist)
 					if(this.playlist.length>0){
-						this.nowPlayIndex = i;
+						this.nowPlayIndex = this.playlist.length - 1;
 						this.clicklist(this.nowPlayIndex);
 					}
 				}
@@ -510,5 +481,30 @@
 				p.style.display = 'none';
 			}
 		}
+
+		let volopenx = false
+		function volopen(){
+			volopenx = !volopenx
+			if(volopenx){
+				document.getElementById('volinput').style.display = 'flex';
+			}else{
+				document.getElementById('volinput').style.display = 'none';
+			}
+		}
+
+		const tabButtons = document.querySelectorAll("[role=tab]");
+		tabButtons.forEach((tabButton) => {
+			tabButton.addEventListener("click", (e) => {
+				e.preventDefault();
+				const tabContainer = e.target.parentElement.parentElement;
+				const targetId = e.target.getAttribute("aria-controls");
+				tabButtons.forEach((_tabButton) =>
+					_tabButton.setAttribute("aria-selected", false)
+				);
+				tabButton.setAttribute("aria-selected", true);
+				tabContainer.querySelectorAll("[role=tabpanel]").forEach((tabPanel) => tabPanel.setAttribute("hidden", true));
+				tabContainer.querySelector(`[role=tabpanel]#${targetId}`).removeAttribute("hidden");
+			});
+		});
 	</script>
 </html>
