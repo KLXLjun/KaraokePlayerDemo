@@ -19,7 +19,7 @@
 
 在启动后,界面应该是这样的
 
-![预览](https://github.com/KLXLjun/KaraokePlayerDemo/blob/main/image/20220814013958.jpg)
+![预览](https://github.com/KLXLjun/KaraokePlayerDemo/blob/master/image/20220814013958.jpg)
 
 底部控制栏分为:播放,暂停,停止(还没做),设置,音量,待播放列表,所有歌曲
 
