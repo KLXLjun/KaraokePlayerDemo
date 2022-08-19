@@ -213,7 +213,7 @@
 				</div>
 			</div>
 		</div>
-		<audio id="audioElement" style="display: none;" controls="false"></audio>
+		<audio id="audioElement" style="display: none;" controls="false" preload="metadata"></audio>
 	</body>
 	<script src="./js/player.js"></script>
 	<script>
@@ -239,6 +239,7 @@
 			debug:true
 		});
 		console.log(player);
+		player.init();
 		player.initlist();
 
 		function SetClassicKaraokeMode(){
@@ -258,7 +259,6 @@
 					album: '-',
 				},
 				nowSelect: -1,
-				nowPlayIndex: -1,
 				NowPlay: {
 					now: "00:00",
 					len: "00:00",
@@ -279,17 +279,16 @@
 			},
 			methods: {
 				clicklist(index){
-					this.nowPlayIndex = index;
 					let p = this.playlist[index];
 					for (let iu = 0; iu < this.playlist.length; iu++) {
-						let p = this.playlist[iu];
+						let po = this.playlist[iu];
 						if(index == iu){
-							this.playlist[iu].now = true;
+							po.now = true;
 						}else{
-							this.playlist[iu].now = false;
+							po.now = false;
 						}
 					}
-					player.init();
+					console.log(p,index);
 					player.play(p.index);
 				},
 				addlist(index){
@@ -352,7 +351,7 @@
 					// 1、拿到当前所有的数据
 					const { keyword, sortStr, list } = this;
 					// 2、根据搜索条件查询
-					let arr = list.filter((item) => item.title.indexOf(keyword) !== -1 || item.artist.indexOf(keyword) !== -1);
+					let arr = list.filter((item) => item.title.toUpperCase().indexOf(keyword.toUpperCase()) !== -1 || item.artist.toUpperCase().indexOf(keyword.toUpperCase()) !== -1);
 					console.log(arr);
 					this.searchresult = arr;
 				},
@@ -365,11 +364,17 @@
 							break;
 						}
 					}
+					console.log(i);
 					this.playlist.splice(i,1);
-					console.log(i,this.playlist)
+					console.log(i,this.playlist);
 					if(this.playlist.length>0){
-						this.nowPlayIndex = this.playlist.length - 1;
-						this.clicklist(this.nowPlayIndex);
+						if(i > this.playlist.length || i == -1){
+							let m = this.playlist.length - 1;
+							this.clicklist(m);
+						}else{
+							this.clicklist(i);
+						}
+						
 					}
 				}
 			},
@@ -432,6 +437,7 @@
 		}
 
 		player.onplayend = function(e){
+			console.log("end")
 			vm.nextpl();
 		}
 

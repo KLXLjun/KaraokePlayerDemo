@@ -290,7 +290,7 @@ function lyricParsingV(option){
 				next = this.oLRC.ms.t[index][this.oLRC.ms.t[index].length - 1];
 			}
 		}
-		console.log(this.Lastlist);
+		//console.log(this.Lastlist);
 		this.LoadOk = true;
 	}
 	
@@ -369,12 +369,6 @@ function lyricParsingV(option){
 				document.getElementById("lasttime").style.display = "none";
 				document.getElementById("lasttimeprocess").style.width = "0%";
 			}
-			// if(this.LrcInfo.DisplayRow == -1){
-			// 	document.getElementById("lasttimeprocess").style.height = "0.5rem";
-			// 	document.getElementById("lasttime").style.display = "block";
-			// 	document.getElementById("lasttime").innerText = o + " s";
-			// 	document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
-			// }
 		}else{
 			document.getElementById("lasttimeprocess").style.height = "0rem";
 			document.getElementById("lasttime").style.display = "none";
@@ -400,7 +394,7 @@ function lyricParsingV(option){
 						next = elex;
 						break;
 					default:
-						elex.removeChild();
+						elex.remove();
 						break;
 				}
 			}
@@ -538,7 +532,7 @@ function lyricParsingV(option){
 						next = elex;
 						break;
 					default:
-						elex.removeChild();
+						elex.remove();
 						break;
 				}
 			}
@@ -707,7 +701,7 @@ function lyricParsingV(option){
 					next = elex;
 					break;
 				default:
-					elex.removeChild();
+					elex.remove();
 					break;
 			}
 		}
@@ -758,7 +752,7 @@ function lyricParsingV(option){
 					next = elex;
 					break;
 				default:
-					elex.removeChild();
+					elex.remove();
 					break;
 			}
 		}

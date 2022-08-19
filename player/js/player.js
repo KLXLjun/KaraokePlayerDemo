@@ -70,7 +70,7 @@ var Player = function(option){
 			this.playerStatus.playing = false;
 			this.playerStatus.paused = true;
 			console.log('end');
-			this.next();
+			this.onplayend();
 		});
 
 		this.sound.addEventListener("pause",() =>{
@@ -81,22 +81,23 @@ var Player = function(option){
 		this.sound.addEventListener("play",() =>{
 			this.playerStatus.playing = true;
 			this.playerStatus.paused = false;
-			console.log('onplay!');
 		});
 
 		this.sound.addEventListener("playing",() =>{
 			this.playerStatus.playing = false;
 			this.playerStatus.paused = true;
 		});
+
+		this.sound.addEventListener("readystatechange", (e)=>{
+			console.log(e)
+		});
 	}
 	
 	this.play = (index) => {
 		if(typeof this.sound != "undefined"){
 			if(index == undefined){
-				if(this.debug)console.log(this);
-				this.sound.play();
+				if(this.debug)console.warn(this);
 			}else{
-				this.pause();
 				let selectx = null;
 				this.list.forEach(element => {
 					if(element.id == index){
@@ -104,18 +105,19 @@ var Player = function(option){
 					}
 				});
 				if(selectx==null){
-					console.log("id不正确",index)
+					console.warn("id不正确",index)
 					return
 				}
 				this.playerStatus.currentIndex = selectx.id;
 				this.sound.src = selectx.music;
+				this.sound.load();
 				this.onplaysonginfo(selectx);
 
 				if(!this.lrPar){
 					this.lrPar = new lyricParsingV({
 						Audio: this,	//音频标签
 						LrcDom: "lrcDomList",
-						Debug:true,	//调试模式
+						Debug:false,	//调试模式
 						reftime:8,		//画布刷新时间(毫秒)
 					});
 				}
@@ -135,7 +137,12 @@ var Player = function(option){
 					}
 				}
 				ajaxRequest.send();
-				this.sound.play();
+				let playPromise = this.sound.play();
+				if(playPromise !== undefined){
+					playPromise.then(()=>{
+						this.sound.play();
+					})
+				}
 			}
 		}
 	}
@@ -144,14 +151,6 @@ var Player = function(option){
 		if(typeof this.sound != "undefined"){
 			this.sound.pause()
 		}
-	}
-
-	this.next = () => {
-		// if((this.apiconfig.songlen > this.playerStatus.currentIndex + 1)){
-		// 	this.playerStatus.currentIndex = this.playerStatus.currentIndex + 1
-		// 	this.play(this.playerStatus.currentIndex);
-		// }
-		this.onplayend();
 	}
 
 	this.duration = () => {
