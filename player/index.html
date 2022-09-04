@@ -109,7 +109,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;" >
+			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;z-index: 10;" >
 				<div>
 					<p style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;">{{ SongInfo.title }}</p>
 					<p style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;">{{ SongInfo.artist }}</p>
@@ -123,19 +123,20 @@
 				</div>
 			</div>
 			
-			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 30;">
+			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 30;background-color: rgba(19, 19, 19, 0.6);">
 				<div style="width: 100%;height: 100%;">
 					<div style="margin-top: 10px;padding-left: 40px;padding-right: 40px;">
 						<div id="cur_time" style="height: 4px;position: relative;margin: 4px 0px 4px;cursor: pointer;width: 100%;margin-left: 4px;margin-right: 4px;margin: 16px 0;">
 							<div style="width: 100%;height: 4px;position: absolute;background-color: #1B5E20;"></div>
 							<div id="curs" style="width: 0%;height: 4px;background: linear-gradient(90deg,#ff4f16,#f77850);position: absolute;transition:all 0.4s cubic-bezier(0.46, 0.03, 0.52, 0.96) 0s;"></div>
 						</div>
-						<div class="ctrls" style="float: left;">
+						<div class="ctrls" style="float: left;color: white;">
 							<div class="mdi mdi-play" @click="btnplay()"></div>
 							<div class="mdi mdi-pause" @click="btnpause()"></div>
 							<div class="mdi mdi-stop" @click="btnstop()"></div>
 						</div>
-						<div class="ctrlsx" style="float: right;">
+						<div class="ctrlsx" style="float: right;color: white;">
+							<div class="mdi mdi-cast-audio rightbutton" style="font-size: 26px;margin-right: 16px;cursor: pointer;" @click="changeconvolver()"></div>
 							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="document.getElementById('setting').style.display = 'block';"></div>
 							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="volopen()"></div>
 							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>
@@ -201,6 +202,10 @@
 										<input type="checkbox" id="ClassicKaraokeOpen" onclick="SetClassicKaraokeMode()">
 										<label for="ClassicKaraokeOpen">经典卡拉OK显示模式 (播放下一首歌时生效)</label>
 									</div>
+									<div class="field-row">
+										<input type="checkbox" id="AudioAnalyserOpen" onclick="SetAudioAnalyserMode()">
+										<label for="AudioAnalyserOpen">音频频谱显示 (立即生效)</label>
+									</div>
 								</p>
 							</article>
 							<article role="tabpanel" hidden id="about">
@@ -211,6 +216,10 @@
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<div style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 1;">
+				<canvas id="cvs"></canvas>
 			</div>
 		</div>
 		<audio id="audioElement" style="display: none;" controls="false" preload="metadata"></audio>
@@ -248,6 +257,18 @@
 				player.setClassicKaraoke(x);
 			}
 		}
+
+		function SetAudioAnalyserMode(){
+			let x = document.getElementById("AudioAnalyserOpen").checked;
+			if(typeof x == "boolean"){
+				player.setAudioAnalyser(x);
+			}
+			if(x){
+				document.getElementById("cvs").style.display = "block";
+			}else{
+				document.getElementById("cvs").style.display = "none";
+			}
+		}
 		
 		var vm = new Vue({
 			el: "#app",
@@ -267,7 +288,9 @@
 				searchresult:[],
 				playlist:[],
 				oldData:null, // 开始排序时按住的旧数据
-    			newData:null // 拖拽过程的数据
+    			newData:null, // 拖拽过程的数据
+				s: [],
+				e: [],
 			},
 			watch: {
 				keyword(newVal) {
@@ -275,7 +298,7 @@
 					if (newVal.length == 0) {
 						this.searchresult = arr;
 					}
-				},
+				}
 			},
 			methods: {
 				clicklist(index){
@@ -368,7 +391,7 @@
 					this.playlist.splice(i,1);
 					console.log(i,this.playlist);
 					if(this.playlist.length>0){
-						if(i > this.playlist.length || i == -1){
+						if(i == -1 || i >= this.playlist.length){
 							let m = this.playlist.length - 1;
 							this.clicklist(m);
 						}else{
@@ -376,10 +399,34 @@
 						}
 						
 					}
+				},
+				changeconvolver(){
+					player.changeConvolverStatus();
 				}
 			},
 			mounted(){
-				
+				// <!--把window.onresize事件挂在到mounted函数上-->
+				window.onresize = () => {
+					return (() => {
+						let fullHeight = document.documentElement.clientHeight;
+						let fullWidth = document.documentElement.clientWidth;
+						player.height = fullHeight;
+						player.width = fullWidth;
+						document.getElementById("cvs").width = fullWidth;
+						document.getElementById("cvs").height = fullHeight;
+						document.getElementById("cvs").style.width = fullWidth;
+						document.getElementById("cvs").style.height = fullHeight;
+					})()
+				};
+
+				let fullHeight = document.documentElement.clientHeight;
+				let fullWidth = document.documentElement.clientWidth;
+				player.height = fullHeight;
+				player.width = fullWidth;
+				document.getElementById("cvs").width = fullWidth;
+				document.getElementById("cvs").height = fullHeight;
+				document.getElementById("cvs").style.width = fullWidth;
+				document.getElementById("cvs").style.height = fullHeight;
 			}
 		});
 		

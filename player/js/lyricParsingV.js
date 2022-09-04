@@ -5,6 +5,7 @@ function lyricParsingV(option){
 	this.GlobalLrcOffset = typeof option.offset!="undefined" && typeof option.offset=="number" ? option.offset : 0;
 	this.RanderFont = typeof option.RanderFont!="undefined" && typeof option.RanderFont=="string" ? option.RanderFont : "32px Microsoft YaHei";
 	this.LrcDom = typeof option.LrcDom!="undefined" ? option.LrcDom : undefined;
+	this.RefEvent = typeof option.RefEvent!="undefined" ? option.RefEvent : undefined;
 	
 	this.oLRC = {
 	    ti: "", //歌曲名
@@ -297,6 +298,9 @@ function lyricParsingV(option){
 	this.RefLrcDisplay = function(){
 		if(!this.AudioEl){
 			return 
+		}
+		if(this.RefEvent!=undefined){
+			this.RefEvent();
 		}
 		let time_s = this.AudioEl.seek() + (this.oLRC.offset / 1000) + (this.GlobalLrcOffset / 1000);
 		if(!this.oLRC.olrc){

@@ -20,9 +20,35 @@ var Player = function(option){
 	if(typeof x == "Boolean"){
 		this.ClassicKaraoke = x;
 	}
+	if(typeof x == "string" && x == "true"){
+		this.ClassicKaraoke = true;
+	}
 	console.log("经典卡拉OK输出:",this.ClassicKaraoke);
 
+	this.AudioAnalyser = false;
+	x = localStorage.getItem("AudioAnalyser");
+	if(typeof x == "Boolean"){
+		this.AudioAnalyser = x;
+	}
+	if(typeof x == "string" && x == "true"){
+		this.AudioAnalyser = true;
+	}
+	console.log("频谱显示:",this.AudioAnalyser);
+
+
 	this.list = [];
+
+	this.aContext = null;
+	this.aSource = null;
+	this.aAnalyser = null;
+	this.analyserOutput = [];
+	this.bassBiquadFilter = null;
+	this.highBiquadFilter = null;
+	this.masterGain = null;
+	this.convolver = null;
+	this.convolverGain = null;
+
+	this.convolverStatus = false;
 	
 	this.sound = document.getElementById("audioElement");
 	this.lrPar;
@@ -37,6 +63,26 @@ var Player = function(option){
 		songlen: 0,
 		limit: 0
 	}
+
+	this.height = 0;
+	this.width = 0;
+
+	this.SPECTROGRAM_COUNT = 32;
+	this.f_b = [];			//波峰位置数组
+	this.down_b = [];		//波峰下落时间
+	this.down_b_speed = [];	//波峰下落速度 Math.pow(10,0.5)
+	this.down_b_speed2 = [];	//下落峰值计数
+
+	for(let i=0;i<this.SPECTROGRAM_COUNT;i++){
+		this.f_b[i] = 0;
+		this.down_b[i] = 20;
+		this.down_b_speed[i] = 1;
+		this.down_b_speed2[i] = 1;
+	}
+
+	this.cvs = null;
+
+	this.loc = new Array(this.SPECTROGRAM_COUNT);
 
 	this.initlist = () => {
 		let ajaxRequest = new XMLHttpRequest();
@@ -65,6 +111,13 @@ var Player = function(option){
 		console.log("经典卡拉OK输出:",this.ClassicKaraoke);
 	}
 
+	this.setAudioAnalyser = (i) => {
+		this.AudioAnalyser = i;
+		localStorage.setItem("AudioAnalyser",i);
+		console.log("频谱显示:",this.AudioAnalyser);
+	}
+	
+
 	this.init = () => {
 		this.sound.addEventListener("ended",() =>{
 			this.playerStatus.playing = false;
@@ -92,11 +145,22 @@ var Player = function(option){
 			console.log(e)
 		});
 	}
+
+	function dks(vle){
+		let s = vle.toString()
+		let t = s.indexOf('.')
+		if(t != -1){
+			return s.substr(0,t)
+		}else{
+			return vle
+		}
+	}
 	
 	this.play = (index) => {
 		if(typeof this.sound != "undefined"){
 			if(index == undefined){
 				if(this.debug)console.warn(this);
+				this.sound.play();
 			}else{
 				let selectx = null;
 				this.list.forEach(element => {
@@ -107,6 +171,81 @@ var Player = function(option){
 				if(selectx==null){
 					console.warn("id不正确",index)
 					return
+				}
+				if(this.aContext==null){
+					this.aContext = new(window.AudioContext || window.webkitAudioContext)();
+					this.aSource = this.aContext.createMediaElementSource(this.sound);
+					this.aAnalyser = this.aContext.createAnalyser();
+					this.aSource.connect(this.aAnalyser);
+
+					this.aAnalyser.size = 4096;
+					this.aAnalyser.smoothingTimeConstant = 0.7;
+
+					this.analyserOutput = new Uint8Array(this.aAnalyser.frequencyBinCount);
+
+					let sampleratePoint = new Array(this.SPECTROGRAM_COUNT);
+					for (let i = 0; i < this.loc.length; i++) {
+						//20000表示的最大频点20KHZ,这里的20-20K之间坐标的数据成对数关系,这是音频标准
+						let F = Math.pow((this.aContext.sampleRate) / 2 / this.SPECTROGRAM_COUNT, 1.0 / this.SPECTROGRAM_COUNT);//方法中20为低频起点20HZ，31为段数
+						sampleratePoint[i] = this.SPECTROGRAM_COUNT * Math.pow(F, i);//乘方，30为低频起点
+						//这里的samplerate为采样率(samplerate / (1024 * 8))是8分频后点FFT的点密度
+						this.loc[i] = sampleratePoint[i] / (this.aContext.sampleRate / (this.aAnalyser.frequencyBinCount * 2));//估算出每一个频点的位置
+					}
+					for(let i=0;i<this.loc.length;i++){
+						this.loc[i] = parseInt(dks(this.loc[i]))
+					}
+					for(let i=0;i< 10;i++){
+						this.loc[i] = i;
+					}
+					console.log(this.loc);
+
+					//低通
+					this.bassBiquadFilter = this.aContext.createBiquadFilter();
+					this.aSource.connect(this.bassBiquadFilter);
+					this.bassBiquadFilter.Q = 1;
+					this.bassBiquadFilter.type = 'lowpass';// 低通
+					this.bassBiquadFilter.frequency.value = 400;// 让400HZ以下的声音通过
+					this.bassBiquadFilter.connect(this.aContext.destination);
+
+					//高通
+					this.highBiquadFilter = this.aContext.createBiquadFilter();
+					this.aSource.connect(this.highBiquadFilter);
+					this.highBiquadFilter.Q = 1;
+					this.highBiquadFilter.type = 'highpass';// 高通
+					this.highBiquadFilter.frequency.value = 400;// 让400HZ以上的声音通过
+					
+					//混响限制器
+					this.masterGain = this.aContext.createGain();
+					this.highBiquadFilter.connect(this.masterGain);
+					this.masterGain.gain.value = 1;
+					this.masterGain.connect(this.aContext.destination);
+
+					//混响
+					this.convolver = this.aContext.createConvolver();
+					this.highBiquadFilter.connect(this.convolver);
+					let frameCount = this.aContext.sampleRate / 2;
+					let buffer = this.aContext.createBuffer(2,frameCount,this.aContext.sampleRate);
+					let data = [buffer.getChannelData(0),buffer.getChannelData(1)];
+					for(let i = 0;i < this.aContext.sampleRate;i++){
+						//平方根衰减
+						let v=1-Math.sqrt(i / this.aContext.sampleRate);
+						//叠加24个不同频率
+						for(let j = 1;j <= 24;j++){
+							v*=Math.sin(i/j);
+						}
+						data[0][i] = data[1][i] = v;
+					};
+					this.convolver.buffer=buffer;
+
+					//混响限制器
+					this.convolverGain = this.aContext.createGain();
+					this.convolver.connect(this.convolverGain);
+					this.convolverGain.gain.value = 0;
+					this.convolverGain.connect(this.aContext.destination);
+				}
+
+				if(this.cvs==null){
+					this.cvs = document.getElementById("cvs").getContext("2d");
 				}
 				this.playerStatus.currentIndex = selectx.id;
 				this.sound.src = selectx.music;
@@ -119,6 +258,7 @@ var Player = function(option){
 						LrcDom: "lrcDomList",
 						Debug:false,	//调试模式
 						reftime:8,		//画布刷新时间(毫秒)
+						RefEvent:this.lrcref,
 					});
 				}
 
@@ -144,6 +284,68 @@ var Player = function(option){
 					})
 				}
 			}
+		}
+	}
+
+	this.lrcref = () => {
+		if(this.aAnalyser!=null){
+			if(!this.AudioAnalyser){
+				return
+			}
+			this.cvs.strokeStyle = "#cccccc";
+			this.aAnalyser.getByteFrequencyData(this.analyserOutput);
+
+			let o = ((this.width / this.SPECTROGRAM_COUNT) * 0.1);
+			let barWidth = (this.width / this.SPECTROGRAM_COUNT) - o;
+
+			//清除画布
+			this.cvs.clearRect(0, 0, this.width, this.height);
+
+			let x = 0;
+			for (let i = 0; i < this.SPECTROGRAM_COUNT; i++) {
+				x = x + o;
+				let b = i;
+				let barHeight = this.height - Math.pow(this.analyserOutput[this.loc[b]],1);
+				
+				if(this.analyserOutput[this.loc[b]] > this.f_b[b]){
+					//当柱大于顶峰0
+					this.f_b[b] = this.analyserOutput[this.loc[b]];
+					this.down_b[b] = 8;
+					this.down_b_speed[b] = 1;
+					this.down_b_speed2[b] = 1;
+				}else{
+					//当柱小于顶峰
+					if(this.f_b[b] > 0){
+						this.down_b_speed[b] = this.down_b_speed[b] + 0.02;
+						this.down_b_speed2[b] = Math.pow(this.down_b_speed[b],1);
+						this.f_b[b] = this.f_b[b] - this.down_b_speed2[b];	
+					}
+				}
+				
+				let hx = this.height - (this.height - (this.height - barHeight)); 
+				//绘制柱
+				this.cvs.fillStyle="#FF0000";
+				this.cvs.fillRect(x,this.height,barWidth,hx - hx - hx);
+				
+				//绘制顶峰
+				//this.cvs.fillStyle="#595959";
+				//this.cvs.fillRect(i * (this.cvs.lineWidth + 3),this.height - ((this.f_b[b] / 256) * this.height + 1),this.cvs.lineWidth,1);
+				x = x + barWidth;
+			}
+		}
+	}
+
+	this.changeConvolverStatus = () => {
+		if(typeof this.aContext != "undefined"){
+			this.convolverStatus = !this.convolverStatus
+			if(this.convolverStatus){
+				this.masterGain.gain.value = 0.9;
+				this.convolverGain.gain.value = 2;
+			}else{
+				this.masterGain.gain.value = 1;
+				this.convolverGain.gain.value = 0;
+			}
+			console.log(this.convolverStatus);
 		}
 	}
 
