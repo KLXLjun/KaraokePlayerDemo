@@ -160,7 +160,7 @@
 						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 32px;"/><button @click="search()" style="width: 4rem;">搜索</button>
 					</div>
 					<div class="div-list" id="songlist">
-						<p v-for="(item,i) in searchresult" @click="addlist(i)">
+						<p v-for="(item,i) in searchresult" @click="addlist(item)">
 							{{ item.artist }} - {{ item.title }}
 						</p>
 					</div>
@@ -302,23 +302,15 @@
 			},
 			methods: {
 				clicklist(index){
-					let p = this.playlist[index];
-					for (let iu = 0; iu < this.playlist.length; iu++) {
-						let po = this.playlist[iu];
-						if(index == iu){
-							po.now = true;
-						}else{
-							po.now = false;
-						}
-					}
-					console.log(p,index);
-					player.play(p.index);
+					let po = this.playlist[index];
+					po.now = true;
+					console.log(po.index,index);
+					player.play(po.index);
 				},
-				addlist(index){
-					console.log(this.list[index],index)
+				addlist(item){
 					this.playlist.push({
-						index:index,
-						song:this.list[index],
+						index:item.id,
+						song:item,
 						now:false,
 					})
 				},
@@ -377,6 +369,7 @@
 					let arr = list.filter((item) => item.title.toUpperCase().indexOf(keyword.toUpperCase()) !== -1 || item.artist.toUpperCase().indexOf(keyword.toUpperCase()) !== -1);
 					console.log(arr);
 					this.searchresult = arr;
+					console.log(this.searchresult);
 				},
 				nextpl(){
 					let i = -1;
@@ -387,9 +380,11 @@
 							break;
 						}
 					}
-					console.log(i);
-					this.playlist.splice(i,1);
-					console.log(i,this.playlist);
+					if(i != -1) {
+						console.log(i);
+						this.playlist.splice(i,1);
+						console.log(i,this.playlist);
+					}
 					if(this.playlist.length>0){
 						if(i == -1 || i >= this.playlist.length){
 							let m = this.playlist.length - 1;
@@ -397,7 +392,6 @@
 						}else{
 							this.clicklist(i);
 						}
-						
 					}
 				},
 				changeconvolver(){
