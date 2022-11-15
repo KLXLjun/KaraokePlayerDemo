@@ -157,7 +157,7 @@
 					<div style="display: flex;
 						justify-content: center;
 						height: 2rem;">
-						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 32px;"/><button @click="search()" style="width: 4rem;">搜索</button>
+						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 26px;"/><button @click="search()" style="width: 4rem;height: 26px;">搜索</button>
 					</div>
 					<div class="div-list" id="songlist">
 						<p v-for="(item,i) in searchresult" @click="addlist(item)">
@@ -206,6 +206,20 @@
 										<input type="checkbox" id="AudioAnalyserOpen" onclick="SetAudioAnalyserMode()">
 										<label for="AudioAnalyserOpen">音频频谱显示 (立即生效)</label>
 									</div>
+									<div class="field-row" style="width: 100%;">
+										<label style="width: 260px;">倒计时时间 (当前选择:[{{ lt }}]):</label>
+										<label>1</label>
+										<input type="range" min="2" max="8" id="lasttimeinput" value="{{lt}}" onchange="SetLastTime()">
+										<label>8</label>
+									</div>
+									<div class="field-row">
+										<label for="textx">倒计时时间精度</label>
+										<select id="LastPrecision" onchange="SetLastTimePer()">
+											<option>1</option>
+											<option>.1</option>
+											<option>.01</option>
+										</select>
+									</div>
 								</p>
 							</article>
 							<article role="tabpanel" hidden id="about">
@@ -218,8 +232,8 @@
 				</div>
 			</div>
 
-			<div style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 1;">
-				<canvas id="cvs"></canvas>
+			<div style="position: fixed;bottom: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 1;">
+				<canvas id="cvs" style="position: fixed;left: 0;bottom: 0;"></canvas>
 			</div>
 		</div>
 		<audio id="audioElement" style="display: none;" controls="false" preload="metadata"></audio>
@@ -251,6 +265,24 @@
 		player.init();
 		player.initlist();
 
+		if(player.ClassicKaraoke == true){
+			document.getElementById("ClassicKaraokeOpen").setAttribute("checked","checked");
+		}
+
+		if(player.AudioAnalyser == true){
+			document.getElementById("AudioAnalyserOpen").setAttribute("checked","checked");
+		}
+		
+		let x = document.querySelectorAll("#LastPrecision option")
+		x.forEach(element => {
+			console.log(String(element.innerText) == String(player.LastTimePer),String(element.innerText) , String(player.LastTimePer))
+			if(String(element.innerText) == String(player.LastTimePer)){
+				element.setAttribute("selected","selected")
+			}else{
+				element.removeAttribute("selected")
+			}
+		});
+
 		function SetClassicKaraokeMode(){
 			let x = document.getElementById("ClassicKaraokeOpen").checked;
 			if(typeof x == "boolean"){
@@ -268,6 +300,16 @@
 			}else{
 				document.getElementById("cvs").style.display = "none";
 			}
+		}
+
+		function SetLastTime(){
+			player.setLastTime(document.getElementById("lasttimeinput").value);
+			vm.$data.lt = document.getElementById("lasttimeinput").value;
+		}
+
+		function SetLastTimePer(){
+			player.setLastTimePer(document.getElementById("LastPrecision").value);
+			vm.$data.lp = document.getElementById("LastPrecision").value;
 		}
 		
 		var vm = new Vue({
@@ -291,6 +333,8 @@
     			newData:null, // 拖拽过程的数据
 				s: [],
 				e: [],
+				lt: 6,
+				lp: 1
 			},
 			watch: {
 				keyword(newVal) {
@@ -303,7 +347,14 @@
 			methods: {
 				clicklist(index){
 					let po = this.playlist[index];
-					po.now = true;
+					for (let ym = 0; ym < this.playlist.length; ym++) {
+						let element = this.playlist[ym];
+						if(ym == index){
+							element.now = true;
+						}else{
+							element.now = false;
+						}
+					}
 					console.log(po.index,index);
 					player.play(po.index);
 				},
@@ -396,6 +447,9 @@
 				},
 				changeconvolver(){
 					player.changeConvolverStatus();
+				},
+				changeValue(e){
+					this.value = e.target.value;
 				}
 			},
 			mounted(){
@@ -404,25 +458,27 @@
 					return (() => {
 						let fullHeight = document.documentElement.clientHeight;
 						let fullWidth = document.documentElement.clientWidth;
-						player.height = fullHeight;
+						player.height = 330;
 						player.width = fullWidth;
 						document.getElementById("cvs").width = fullWidth;
-						document.getElementById("cvs").height = fullHeight;
+						document.getElementById("cvs").height = 330;
 						document.getElementById("cvs").style.width = fullWidth;
-						document.getElementById("cvs").style.height = fullHeight;
+						document.getElementById("cvs").style.height = 330;
 					})()
 				};
 
 				let fullHeight = document.documentElement.clientHeight;
 				let fullWidth = document.documentElement.clientWidth;
-				player.height = fullHeight;
+				player.height = 330;
 				player.width = fullWidth;
 				document.getElementById("cvs").width = fullWidth;
-				document.getElementById("cvs").height = fullHeight;
+				document.getElementById("cvs").height = 330;
 				document.getElementById("cvs").style.width = fullWidth;
-				document.getElementById("cvs").style.height = fullHeight;
+				document.getElementById("cvs").style.height = 330;
 			}
 		});
+		
+		vm.$data.lt = Number(player.LastCount);
 		
 		document.getElementById('cur_time').addEventListener('mouseup',(ew) => {
 			let x = document.getElementById('cur_time')

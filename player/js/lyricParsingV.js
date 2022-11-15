@@ -23,6 +23,9 @@ function lyricParsingV(option){
 	}
 	this.LoadOk = false;
 	this.ClassicKaraoke = false;
+
+	this.LastTime = 6;
+	this.LastTimePer = "1";
 	
 	this.timer = setInterval(() => {
 		if(this.LoadOk){
@@ -138,10 +141,6 @@ function lyricParsingV(option){
 			        for (let k in arr){
 			            let t = arr[k].substring(1, arr[k].length-1);//取[]间的内容
 			            let s = t.split(":");//分离:前后文字
-			            // this.oLRC.ms.push({//对象{t:时间,c:歌词}加入ms数组
-			            //     t: parseFloat((parseFloat(s[0])*60+parseFloat(s[1])).toFixed(3)),
-			            //     c: content
-			            // });
 						lpdall.t.push(parseFloat((parseFloat(s[0])*60+parseFloat(s[1])).toFixed(3)));
 						lpdall.al.push(content);
 			        }
@@ -351,23 +350,41 @@ function lyricParsingV(option){
 
 		if(this.LrcInfo.DisplayRow + 1 < this.LrcInfo.Len){
 			let next = 0;
+			let nowt = 0;
 			if(this.oLRC.olrc){
 				next = this.oLRC.ms.t[this.LrcInfo.DisplayRow + 1];
+				nowt = this.oLRC.ms.t[this.LrcInfo.DisplayRow];
 			}else{
 				next = this.oLRC.ms.t[this.LrcInfo.DisplayRow + 1][0];
+				if(this.LrcInfo.DisplayRow > -1){
+					let ow = this.oLRC.ms.t[this.LrcInfo.DisplayRow];
+					if(typeof ow == "object" && ow.length > 2){
+						nowt = this.oLRC.ms.t[this.LrcInfo.DisplayRow][ow.length - 1];
+					}else{
+						nowt = this.oLRC.ms.t[this.LrcInfo.DisplayRow][0];
+					}
+				}else{
+					nowt = this.oLRC.ms.t[0][0];
+				}
 			}
-			let p = this.Lastlist[this.LrcInfo.DisplayRow + 1]
-			let o = (next - time_s).toFixed(1);
-			if(this.LrcInfo.DisplayRow == -1 &&next - time_s < 6){
+			let p = this.Lastlist[this.LrcInfo.DisplayRow + 1];
+			let o = (next - time_s + 1).toFixed(0);
+			if(this.LastTimePer == ".1"){
+				o = (next - time_s).toFixed(1);
+			}else if(this.LastTimePer == ".01"){
+				o = (next - time_s).toFixed(2);
+			}
+			let morex = (next - time_s).toFixed(2);
+			if(this.LrcInfo.DisplayRow == -1 && next - time_s < this.LastTime && next > this.LastTime){
 				document.getElementById("lasttimeprocess").style.height = "0.5rem";
 				document.getElementById("lasttime").style.display = "block";
 				document.getElementById("lasttime").innerText = o + " s";
-				document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
-			}else if(next - time_s < 6 && p > 6){
+				document.getElementById("lasttimeprocess").style.width = ((morex / this.LastTime) * 100)+ "%";
+			}else if(next - time_s < this.LastTime && p > this.LastTime && next - nowt > this.LastTime){
 				document.getElementById("lasttimeprocess").style.height = "0.5rem";
 				document.getElementById("lasttime").style.display = "block";
 				document.getElementById("lasttime").innerText = o + " s";
-				document.getElementById("lasttimeprocess").style.width = ((o / 6) * 100)+ "%";
+				document.getElementById("lasttimeprocess").style.width = ((morex / this.LastTime) * 100)+ "%";
 			}else{
 				document.getElementById("lasttimeprocess").style.height = "0rem";
 				document.getElementById("lasttime").style.display = "none";

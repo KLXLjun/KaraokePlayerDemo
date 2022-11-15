@@ -16,25 +16,28 @@ var Player = function(option){
 	}
 
 	this.ClassicKaraoke = false;
-	let x = localStorage.getItem("ClassicKaraoke");
-	if(typeof x == "Boolean"){
-		this.ClassicKaraoke = x;
-	}
-	if(typeof x == "string" && x == "true"){
+	if(localStorage.getItem("ClassicKaraoke") == "true"){
 		this.ClassicKaraoke = true;
 	}
 	console.log("经典卡拉OK输出:",this.ClassicKaraoke);
 
 	this.AudioAnalyser = false;
-	x = localStorage.getItem("AudioAnalyser");
-	if(typeof x == "Boolean"){
-		this.AudioAnalyser = x;
-	}
-	if(typeof x == "string" && x == "true"){
+	if(localStorage.getItem("AudioAnalyser") == "true"){
 		this.AudioAnalyser = true;
 	}
 	console.log("频谱显示:",this.AudioAnalyser);
 
+	this.LastCount = Number(localStorage.getItem("LastCount"));
+	if(!this.LastCount){
+		this.LastCount = 6;
+	}
+	console.log("倒计时显示时间:",this.LastCount);
+
+	this.LastTimePer = localStorage.getItem("LastTimePer");
+	if(!this.LastTimePer){
+		this.LastTimePer = 1;
+	}
+	console.log("倒计时时间精度:",this.LastTimePer);
 
 	this.list = [];
 
@@ -117,6 +120,21 @@ var Player = function(option){
 		console.log("频谱显示:",this.AudioAnalyser);
 	}
 	
+	this.setLastTime = (i) => {
+		this.LastCount = i;
+		localStorage.setItem("LastCount",i);
+		if(this.lrPar){
+			this.lrPar.LastTime = Number(i);
+		}
+	}
+
+	this.setLastTimePer = (i) => {
+		this.LastTimePer = i;
+		localStorage.setItem("LastTimePer",i);
+		if(this.lrPar){
+			this.lrPar.LastTimePer = i;
+		}
+	}
 
 	this.init = () => {
 		this.sound.addEventListener("ended",() =>{
@@ -177,9 +195,10 @@ var Player = function(option){
 					this.aSource = this.aContext.createMediaElementSource(this.sound);
 					this.aAnalyser = this.aContext.createAnalyser();
 					this.aSource.connect(this.aAnalyser);
+					this.aAnalyser.connect(this.aContext.destination);
 
 					this.aAnalyser.size = 4096;
-					this.aAnalyser.smoothingTimeConstant = 0.7;
+					this.aAnalyser.smoothingTimeConstant = 0.65;
 
 					this.analyserOutput = new Uint8Array(this.aAnalyser.frequencyBinCount);
 
@@ -205,7 +224,7 @@ var Player = function(option){
 					this.bassBiquadFilter.Q = 1;
 					this.bassBiquadFilter.type = 'lowpass';// 低通
 					this.bassBiquadFilter.frequency.value = 400;// 让400HZ以下的声音通过
-					this.bassBiquadFilter.connect(this.aContext.destination);
+					//this.bassBiquadFilter.connect(this.aContext.destination);
 
 					//高通
 					this.highBiquadFilter = this.aContext.createBiquadFilter();
@@ -218,7 +237,7 @@ var Player = function(option){
 					this.masterGain = this.aContext.createGain();
 					this.highBiquadFilter.connect(this.masterGain);
 					this.masterGain.gain.value = 1;
-					this.masterGain.connect(this.aContext.destination);
+					//this.masterGain.connect(this.aContext.destination);
 
 					//混响
 					this.convolver = this.aContext.createConvolver();
@@ -241,7 +260,7 @@ var Player = function(option){
 					this.convolverGain = this.aContext.createGain();
 					this.convolver.connect(this.convolverGain);
 					this.convolverGain.gain.value = 0;
-					this.convolverGain.connect(this.aContext.destination);
+					//this.convolverGain.connect(this.aContext.destination);
 				}
 
 				if(this.cvs==null){
@@ -263,6 +282,9 @@ var Player = function(option){
 				}
 
 				this.lrPar.ClassicKaraoke = this.ClassicKaraoke;
+				this.lrPar.LastTime = this.LastCount;
+				this.lrPar.LastTimePer = this.LastTimePer;
+				
 				
 				let ajaxRequest = new XMLHttpRequest();
 				ajaxRequest.open('GET', selectx.lrc, true);
@@ -305,7 +327,8 @@ var Player = function(option){
 			for (let i = 0; i < this.SPECTROGRAM_COUNT; i++) {
 				x = x + o;
 				let b = i;
-				let barHeight = this.height - Math.pow(this.analyserOutput[this.loc[b]],1);
+				let barHeight = this.height * (1 - (this.analyserOutput[this.loc[b]] / 256));
+				let bbarHeight = this.height * (1 - (this.f_b[b] / 256));
 				
 				if(this.analyserOutput[this.loc[b]] > this.f_b[b]){
 					//当柱大于顶峰0
@@ -316,9 +339,9 @@ var Player = function(option){
 				}else{
 					//当柱小于顶峰
 					if(this.f_b[b] > 0){
-						this.down_b_speed[b] = this.down_b_speed[b] + 0.02;
-						this.down_b_speed2[b] = Math.pow(this.down_b_speed[b],1);
-						this.f_b[b] = this.f_b[b] - this.down_b_speed2[b];	
+						this.down_b_speed[b] = this.down_b_speed[b] + 0.01;
+						this.down_b_speed2[b] = Math.pow(this.down_b_speed[b],0.5);
+						this.f_b[b] = this.f_b[b] - this.down_b_speed2[b];
 					}
 				}
 				
@@ -327,9 +350,10 @@ var Player = function(option){
 				this.cvs.fillStyle="#FF0000";
 				this.cvs.fillRect(x,this.height,barWidth,hx - hx - hx);
 				
+				let ohe = (this.height - (this.height - bbarHeight));
 				//绘制顶峰
-				//this.cvs.fillStyle="#595959";
-				//this.cvs.fillRect(i * (this.cvs.lineWidth + 3),this.height - ((this.f_b[b] / 256) * this.height + 1),this.cvs.lineWidth,1);
+				this.cvs.fillStyle="#595959";
+				this.cvs.fillRect(x,ohe,barWidth,1);
 				x = x + barWidth;
 			}
 		}
@@ -341,9 +365,17 @@ var Player = function(option){
 			if(this.convolverStatus){
 				this.masterGain.gain.value = 0.9;
 				this.convolverGain.gain.value = 2;
+				this.aAnalyser.disconnect();
+				this.convolverGain.connect(this.aContext.destination);
+				this.masterGain.connect(this.aContext.destination);
+				this.bassBiquadFilter.connect(this.aContext.destination);
 			}else{
 				this.masterGain.gain.value = 1;
 				this.convolverGain.gain.value = 0;
+				this.aAnalyser.connect(this.aContext.destination);
+				this.convolverGain.disconnect();
+				this.masterGain.disconnect();
+				this.bassBiquadFilter.disconnect();
 			}
 			console.log(this.convolverStatus);
 		}
