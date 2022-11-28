@@ -10,6 +10,7 @@ var Player = function(option){
 		volume: 1,
 		playing:false,
 		paused:true,
+		ended:false,
 		currentIndex:0,
 		muted:false,
 		loop:false
@@ -112,6 +113,13 @@ var Player = function(option){
 		this.ClassicKaraoke = i;
 		localStorage.setItem("ClassicKaraoke",i);
 		console.log("经典卡拉OK输出:",this.ClassicKaraoke);
+		Workerbc({	
+			code:window.PostCode.ConfigChange,
+			ClassicKaraoke:this.ClassicKaraoke,
+			AudioAnalyser:this.AudioAnalyser,
+			LastTime:this.LastCount,
+			LastTimePer:this.LastTimePer
+		});
 	}
 
 	this.setAudioAnalyser = (i) => {
@@ -121,11 +129,17 @@ var Player = function(option){
 	}
 	
 	this.setLastTime = (i) => {
-		this.LastCount = i;
+		this.LastCount = Number(i);
 		localStorage.setItem("LastCount",i);
 		if(this.lrPar){
-			this.lrPar.LastTime = Number(i);
+			this.lrPar.LastTime = this.LastCount;
 		}
+		Workerbc({	
+			code:window.PostCode.ConfigChange,
+			ClassicKaraoke:this.ClassicKaraoke,
+			LastTime:this.LastCount,
+			LastTimePer:this.LastTimePer
+		});
 	}
 
 	this.setLastTimePer = (i) => {
@@ -134,29 +148,51 @@ var Player = function(option){
 		if(this.lrPar){
 			this.lrPar.LastTimePer = i;
 		}
+		Workerbc({	
+			code:window.PostCode.ConfigChange,
+			ClassicKaraoke:this.ClassicKaraoke,
+			LastTime:this.LastCount,
+			LastTimePer:this.LastTimePer
+		});
 	}
 
 	this.init = () => {
 		this.sound.addEventListener("ended",() =>{
 			this.playerStatus.playing = false;
 			this.playerStatus.paused = true;
+			this.playerStatus.ended = true;
 			console.log('end');
+			Workerbc({	
+				code:window.PostCode.PlayerEnded
+			});
 			this.onplayend();
 		});
 
 		this.sound.addEventListener("pause",() =>{
 			this.playerStatus.playing = false;
 			this.playerStatus.paused = true;
+			this.playerStatus.ended = false;
+			Workerbc({
+				code:window.PostCode.PlayerPause
+			});
 		});
 
 		this.sound.addEventListener("play",() =>{
 			this.playerStatus.playing = true;
 			this.playerStatus.paused = false;
+			this.playerStatus.ended = false;
+			Workerbc({
+				code:window.PostCode.PlayerPlay
+			});
 		});
 
 		this.sound.addEventListener("playing",() =>{
 			this.playerStatus.playing = false;
-			this.playerStatus.paused = true;
+			this.playerStatus.paused = false;
+			this.playerStatus.ended = false;
+			Workerbc({
+				code:window.PostCode.Playerplaying
+			});
 		});
 
 		this.sound.addEventListener("readystatechange", (e)=>{
@@ -172,6 +208,16 @@ var Player = function(option){
 		}else{
 			return vle
 		}
+	}
+
+	this.getinfo = (index) => {
+		let selectx = null;
+		this.list.forEach(element => {
+			if(element.id == index){
+				selectx = element;
+			}
+		});
+		return selectx
 	}
 	
 	this.play = (index) => {
@@ -276,7 +322,7 @@ var Player = function(option){
 						Audio: this,	//音频标签
 						LrcDom: "lrcDomList",
 						Debug:false,	//调试模式
-						reftime:8,		//画布刷新时间(毫秒)
+						reftime:16,		//画布刷新时间(毫秒)
 						RefEvent:this.lrcref,
 					});
 				}
@@ -296,6 +342,12 @@ var Player = function(option){
 						}else{
 							this.lrPar.ReadLrc("[00:00.00]Not Found Lrc File")
 						}
+						Workerbc({	
+							code:window.PostCode.CreateNewSong,
+							info:selectx,
+							oLrc:this.lrPar.oLRC,
+							Lastlist:this.lrPar.Lastlist
+						});
 					}
 				}
 				ajaxRequest.send();
@@ -309,7 +361,7 @@ var Player = function(option){
 		}
 	}
 
-	this.lrcref = () => {
+	this.lrcref = (seek) => {
 		if(this.aAnalyser!=null){
 			if(!this.AudioAnalyser){
 				return
@@ -357,6 +409,10 @@ var Player = function(option){
 				x = x + barWidth;
 			}
 		}
+		Workerbc({	
+			code:window.PostCode.RefEvent,
+			seek:seek
+		});
 	}
 
 	this.changeConvolverStatus = () => {
@@ -380,10 +436,24 @@ var Player = function(option){
 			console.log(this.convolverStatus);
 		}
 	}
+	
 
 	this.pause = () => {
 		if(typeof this.sound != "undefined"){
 			this.sound.pause()
+		}
+	}
+
+	this.stop = () => {
+		if(typeof this.sound != "undefined"){
+			this.sound.pause();
+			this.sound.src = "";
+			this.lrPar.ReadLrc("[00:00.00]");
+			this.onplaysonginfo({
+				title: 'KaraokePlayerDemo',
+				artist: '-',
+				album: '-',
+			});
 		}
 	}
 

@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<title>KaraokePlayerDemo</title>
+		<title>KaraokePlayerDemo - Main</title>
 		<link rel="stylesheet" href="css/7.css">
 		<script src="js/vue.min.js" type="text/javascript" charset="utf-8"></script>
 		<script src="js/lyricParsingV.js" type="text/javascript" charset="utf-8"></script>
@@ -67,6 +67,15 @@
 			}
 		</style>
 		<style>
+			.icon-item{
+				font-size: 19px;
+				text-align: center;
+			}
+
+			.icon-item:hover{
+				background-color: #EEEEEE;
+			}
+
 			.div-list{
 				width: 100%;
 				height: calc(100% - 48px - 32px);
@@ -75,18 +84,25 @@
 				overflow-x: hidden;
 			}
 
-			.div-list p{
+			.div-list-item{
+				display: flex;
 				line-height: 32px;
 				border-bottom: 1px solid rgba(0,0,0,.12);
-				padding: 4px 28px;
+				padding: 4px 4px;
 				transition: all .2s ease;
 				cursor: pointer;
 				margin: 0;
 				font-size: 14px;
 			}
-			
-			.div-list p:hover{
-				background-color: #EEEEEE;
+
+			.div-list-item-info{
+				text-align: left;
+				line-height: 32px;
+				font-size: 15px;
+			}
+
+			.div-list-item-info-sub{
+				color: #5e5e5e;
 			}
 
 			#canvaslist{
@@ -99,11 +115,12 @@
 			.rightbutton{
 				font-size: 26px;
 				cursor: pointer;
+				margin-right: 16px;
 				padding: 0 2px;
 			}
 
 			.nowplay{
-				background-color: #39863e;
+				background-color: rgba(0,0,0,.08);
 			}
 		</style>
 	</head>
@@ -136,7 +153,8 @@
 							<div class="mdi mdi-stop" @click="btnstop()"></div>
 						</div>
 						<div class="ctrlsx" style="float: right;color: white;">
-							<div class="mdi mdi-cast-audio rightbutton" style="font-size: 26px;margin-right: 16px;cursor: pointer;" @click="changeconvolver()"></div>
+							<div class="mdi mdi-cast rightbutton" @click="openSecondScreen()"></div>
+							<div class="mdi mdi-cast-audio rightbutton" @click="changeconvolver()"></div>
 							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="document.getElementById('setting').style.display = 'block';"></div>
 							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="volopen()"></div>
 							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>
@@ -160,9 +178,16 @@
 						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 26px;"/><button @click="search()" style="width: 4rem;height: 26px;">搜索</button>
 					</div>
 					<div class="div-list" id="songlist">
-						<p v-for="(item,i) in searchresult" @click="addlist(item)">
-							{{ item.artist }} - {{ item.title }}
-						</p>
+						<div class="div-list-item" v-for="(item,i) in searchresult">
+							<div style="width: 24px;padding-right: 4px;">
+								<i class="mdi icon-item mdi-play" @click="playselect(item)"></i>
+								<i class="mdi icon-item mdi-plus" @click="addlist(item)"></i>
+							</div>
+							<div style="width: auto;">
+								<div class="div-list-item-info">{{ item.title }}</div>
+								<div class="div-list-item-info-sub">{{ item.artist }}</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -171,13 +196,20 @@
 				<div id="lglistn" style="position: fixed;left: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
 					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">待播放列表</div>
 					<div class="div-list" id="playsonglist" style="height: calc(100% - 48px)!important;">
-						<p v-for="(item,index) in playlist" @click="clicklist(index)" :draggable="true" :class="item.now == true ? 'nowplay' : ''"
+						<div class="div-list-item" v-for="(item,index) in playlist" :draggable="true" :class="item.now == true ? 'nowplay' : ''"
 						@dragstart="dragstart(item)"
 						@dragenter="dragenter(item,$event)"
 						@dragend="dragend(item,$event)"
 						@dragover="dragover($event)">
-							{{ item.song.artist }} - {{ item.song.title }}
-						</p>
+							<div style="width: 24px;padding-right: 4px;">
+								<i class="mdi icon-item mdi-play" @click="clicklist(index)"></i>
+								<i class="mdi icon-item mdi-delete" @click="removelistitem(index)"></i>
+							</div>
+							<div style="width: auto;">
+								<div class="div-list-item-info">{{ item.song.title }}</div>
+								<div class="div-list-item-info-sub">{{ item.song.artist }}</div>
+							</div>
+					</div>
 					</div>
 				</div>
 			</div>
@@ -238,14 +270,57 @@
 		</div>
 		<audio id="audioElement" style="display: none;" controls="false" preload="metadata"></audio>
 	</body>
-	<script src="./js/player.js"></script>
+	<script src="js/postcode.js"></script>
 	<script>
+		window.KaraokeWorker = new SharedWorker('js/karaokeWorker.js','KaraokeWorker');
 		function secondToDate(result) {
 		    let m = Math.floor((result / 60 % 60)) < 10 ? '0' + Math.floor((result / 60 % 60)) : Math.floor((result / 60 % 60));
 		    let s = Math.floor((result % 60)) < 10 ? '0' + Math.floor((result % 60)) : Math.floor((result % 60));
 		    return m + ":" + s;
 		}
-		
+
+		window.onbeforeunload = () => {
+			window.KaraokeWorker.port.postMessage('Main Close');
+		};
+
+		window.KaraokeWorker.port.postMessage('Main Load');
+		window.KaraokeWorker.port.onmessage = (e) => {
+            if(typeof e.data == "object"){
+                switch (e.data.code) {
+                    default:
+                        console.log(e.data);
+                    break;
+                }
+            }else if(typeof e.data == "string"){
+                console.log(e.data);
+				if(e.data === "SecondScreen Load"){
+					if(player.lrPar){
+						Workerbc({	
+							code:window.PostCode.CreateNewSong,
+							info:player.getinfo(player.playerStatus.currentIndex),
+							oLrc:player.lrPar.oLRC,
+							Lastlist:player.lrPar.Lastlist
+						});
+					}
+					Workerbc({	
+						code:window.PostCode.ConfigChange,
+						ClassicKaraoke:player.ClassicKaraoke,
+						LastTime:player.LastCount,
+						LastTimePer:player.LastTimePer
+					});
+				}
+            }else{
+                console.log(e.data);
+            }
+        }
+
+		console.log(window.KaraokeWorker)
+		function Workerbc(message) {
+			window.KaraokeWorker.port.postMessage(message);
+		}
+	</script>
+	<script src="js/player.js"></script>
+	<script>
 		function findPos(el){
 			let x = 0, y = 0;
 			if(el.offsetParent){
@@ -358,12 +433,52 @@
 					console.log(po.index,index);
 					player.play(po.index);
 				},
+				removelistitem(index){
+					let i = -1;
+					for (let ym = 0; ym < this.playlist.length; ym++) {
+						let element = this.playlist[ym];
+						if(element.now == true){
+							i = ym;
+							break;
+						}
+					}
+					this.playlist.splice(index,1);
+					if(this.playlist.length>0 && i == index){
+						if(index == -1 || index >= this.playlist.length){
+							let m = this.playlist.length - 1;
+							this.clicklist(m);
+						}else{
+							this.clicklist(index);
+						}
+					}else{
+						player.stop();
+					}
+				},
 				addlist(item){
 					this.playlist.push({
 						index:item.id,
 						song:item,
 						now:false,
 					})
+				},
+				playselect(item){
+					this.playlist.push({
+						index:item.id,
+						song:item,
+						now:false,
+					});
+					let index = this.playlist.length - 1;
+					let po = this.playlist[index];
+					for (let ym = 0; ym < this.playlist.length; ym++) {
+						let element = this.playlist[ym];
+						if(ym == index){
+							element.now = true;
+						}else{
+							element.now = false;
+						}
+					}
+					console.log(po.index,index);
+					player.play(po.index);
 				},
 				btnnext(){
 					player.next();
@@ -450,6 +565,9 @@
 				},
 				changeValue(e){
 					this.value = e.target.value;
+				},
+				openSecondScreen(){
+					window.open("secondScreen.html","KaraokePlayerDemo - SecondScreen",'toolbar=no,menubar=no,scrollbars=auto,resizable=no,location=no,status=no,width=720,height=480');
 				}
 			},
 			mounted(){
