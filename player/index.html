@@ -8,6 +8,8 @@
 		<script src="js/lyricParsingV.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="css/materialdesignicons.min.css">
 		<link rel="stylesheet" href="css/lrc.css"/>
+		<script src="js/vue-i18n.min.js"></script>
+		<script src="js/lang.js"></script>
 		<style>
 			*{
 				font-family: 'Microsoft YaHei',Arial,Helvetica,Sans-Serif;;
@@ -156,7 +158,8 @@
 							<div class="mdi mdi-cast rightbutton" @click="openSecondScreen()"></div>
 							<div class="mdi mdi-cast-audio rightbutton" @click="changeconvolver()"></div>
 							<div class="mdi mdi-cog" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="document.getElementById('setting').style.display = 'block';"></div>
-							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="volopen()"></div>
+							<div class="mdi mdi-volume-high" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="volopen(false)"></div>
+							<div class="mdi mdi-music-note" style="font-size: 26px;margin-right: 16px;cursor: pointer;" onclick="pitchopen(false)"></div>
 							<div onclick="lightlist()" class="mdi mdi-playlist-plus rightbutton"></div>
 							<div onclick="rightlist()" class="mdi mdi-playlist-music rightbutton" ></div>
 						</div>
@@ -164,18 +167,23 @@
 				</div>
 			</div>
 
-			<div id="volinput" style="position: fixed;bottom: 72px;width: 172px;right: 48px;height: 32px;display: flex;justify-content: center;background-color: #b3b3b3;z-index: 50;display: none;">
+			<div id="volinput" style="position: fixed;line-height: 32px;bottom: 72px;width: 172px;right: 48px;height: 32px;display: flex;justify-content: center;background-color: #b3b3b3;z-index: 50;display: none;">
+				<div>{{ $t("volume") }}:</div>
 				<input id="vols" type="range" max="100" min="0" value="100" style="width: 128px;margin: 0 auto;"/>
+			</div>
+			<div id="picthinput" style="position: fixed;line-height: 32px;bottom: 72px;width: 172px;right: 48px;height: 32px;display: flex;justify-content: center;background-color: #b3b3b3;z-index: 50;display: none;">
+				<div>{{ $t("pitch") }}:</div>
+				<input id="pitch" type="range" max="13" min="0" value="7" style="width: 128px;margin: 0 auto;"/>
 			</div>
 			
 			<div id="rglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
 				<div style="width: auto;height: 100%;" onclick="rightlist()"></div>
 				<div id="rglistn" style="position: fixed;right: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
-					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">所有歌曲</div>
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">{{ $t("allMusic") }}</div>
 					<div style="display: flex;
 						justify-content: center;
 						height: 2rem;">
-						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 26px;"/><button @click="search()" style="width: 4rem;height: 26px;">搜索</button>
+						<input type="text" placeholder="搜索内容" v-model="keyword" style="width: 100%;border-radius: 0;height: 26px;"/><button @click="search()" style="width: 4rem;height: 26px;">{{ $t('search') }}</button>
 					</div>
 					<div class="div-list" id="songlist">
 						<div class="div-list-item" v-for="(item,i) in searchresult">
@@ -194,7 +202,7 @@
 			<div id="lglist" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 5;background-color: rgba(0,0,0,0.25);z-index: 110;display: none;" >
 				<div style="width: auto;height: 100%;" onclick="lightlist()"></div>
 				<div id="lglistn" style="position: fixed;left: 0%;top: 0;height: 100%;width: 30%;background-color: #FFFFFF;z-index: 111;transition: all .4s cubic-bezier(0, 0, 0.2, 1);">
-					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">待播放列表</div>
+					<div style="color: gainsboro;padding: 12px 28px;height: 24px;">{{ $t("playQueue") }}</div>
 					<div class="div-list" id="playsonglist" style="height: calc(100% - 48px)!important;">
 						<div class="div-list-item" v-for="(item,index) in playlist" :draggable="true" :class="item.now == true ? 'nowplay' : ''"
 						@dragstart="dragstart(item)"
@@ -218,46 +226,54 @@
 				<div class="background" style="position: fixed;left: calc(50% - 240px);top: calc(25%);">
 					<div class="window glass" style="width: 480px;">
 					  <div class="title-bar">
-							<div class="title-bar-text">设置</div>
+							<div class="title-bar-text">{{ $t("setting") }}</div>
 							<div class="title-bar-controls">
 						  		<button aria-label="Close" onclick="document.getElementById('setting').style.display = 'none';"></button>
 							</div>
 					  	</div>
 					  	<div class="window-body">
 							<menu role="tablist">
-								<button role="tab" aria-controls="setting" aria-selected="true">设置</button>
-								<button role="tab" aria-controls="about">关于</button>
+								<button role="tab" aria-controls="setting" aria-selected="true">{{ $t("settingTab") }}</button>
+								<button role="tab" aria-controls="about">{{ $t("aboutTab") }}</button>
 							</menu>
 							<article role="tabpanel" id="setting">
 								<p>
 									<div class="field-row">
 										<input type="checkbox" id="ClassicKaraokeOpen" onclick="SetClassicKaraokeMode()">
-										<label for="ClassicKaraokeOpen">经典卡拉OK显示模式 (播放下一首歌时生效)</label>
+										<label for="ClassicKaraokeOpen">{{ $t("settingClassicKaraoke") }}</label>
 									</div>
 									<div class="field-row">
 										<input type="checkbox" id="AudioAnalyserOpen" onclick="SetAudioAnalyserMode()">
-										<label for="AudioAnalyserOpen">音频频谱显示 (立即生效)</label>
+										<label for="AudioAnalyserOpen">{{ $t("settingAudioSpectrum") }}</label>
 									</div>
 									<div class="field-row" style="width: 100%;">
-										<label style="width: 260px;">倒计时时间 (当前选择:[{{ lt }}]):</label>
+										<label style="width: 260px;">{{ $t("settingCountdownTimeDisplayTime") }}:[{{ lt }}]</label>
 										<label>1</label>
 										<input type="range" min="2" max="8" id="lasttimeinput" value="{{lt}}" onchange="SetLastTime()">
 										<label>8</label>
 									</div>
 									<div class="field-row">
-										<label for="textx">倒计时时间精度</label>
+										<label for="textx">{{ $t("settingCountdownTimeDisplayAccuracy") }}</label>
 										<select id="LastPrecision" onchange="SetLastTimePer()">
 											<option>1</option>
 											<option>.1</option>
 											<option>.01</option>
 										</select>
 									</div>
+									<div class="field-row">
+										<label for="textx">{{ $t("settingLanguage") }}</label>
+										<select v-model="$i18n.locale">
+											<option v-for="(lang, i) in langs" :key="`Lang${i}`" :value="lang">
+												{{ langsText[i] }}
+											</option>
+										</select>
+									</div>
 								</p>
 							</article>
 							<article role="tabpanel" hidden id="about">
 								<h3 style="margin-top: 0;">KaraokePlayerDemo</h3>
-								<p>项目链接:<a href="https://github.com/KLXLjun/KaraokePlayerDemo">KaraokePlayerDemo</a></p>
-								<p>注意:在本项目Demo中,如果演示歌曲侵权,请与我联系,我会将其删除</p>
+								<p>{{ $t("aboutProjectLink") }}:<a href="https://github.com/KLXLjun/KaraokePlayerDemo">KaraokePlayerDemo</a></p>
+								<p>{{ $t("aboutNote") }}</p>
 							</article>
 						</div>
 					</div>
@@ -287,6 +303,11 @@
 		window.KaraokeWorker.port.onmessage = (e) => {
             if(typeof e.data == "object"){
                 switch (e.data.code) {
+					case window.PostCode.Ping:
+						Workerbc({
+							code:window.PostCode.Pong
+						});
+					break;
                     default:
                         console.log(e.data);
                     break;
@@ -296,18 +317,18 @@
 				if(e.data === "SecondScreen Load"){
 					if(player.lrPar){
 						Workerbc({	
+							code:window.PostCode.ConfigChange,
+							ClassicKaraoke:player.ClassicKaraoke,
+							LastTime:player.LastCount,
+							LastTimePer:player.LastTimePer
+						});
+						Workerbc({	
 							code:window.PostCode.CreateNewSong,
 							info:player.getinfo(player.playerStatus.currentIndex),
 							oLrc:player.lrPar.oLRC,
 							Lastlist:player.lrPar.Lastlist
 						});
 					}
-					Workerbc({	
-						code:window.PostCode.ConfigChange,
-						ClassicKaraoke:player.ClassicKaraoke,
-						LastTime:player.LastCount,
-						LastTimePer:player.LastTimePer
-					});
 				}
             }else{
                 console.log(e.data);
@@ -386,9 +407,16 @@
 			player.setLastTimePer(document.getElementById("LastPrecision").value);
 			vm.$data.lp = document.getElementById("LastPrecision").value;
 		}
+
+		const i18n = new VueI18n({
+			locale: 'zh',    // 语言标识
+			fallbackLocale: 'zh',
+			messages: window.uiText
+		})
 		
 		var vm = new Vue({
 			el: "#app",
+			i18n,
 			data: {
 				keyword: "",
 				SongInfo:{
@@ -401,6 +429,8 @@
 					now: "00:00",
 					len: "00:00",
 				},
+				langsText: ["简体中文","English"],
+				langs: ['zh', 'en'],
 				list:[],
 				searchresult:[],
 				playlist:[],
@@ -442,16 +472,21 @@
 							break;
 						}
 					}
+					console.log(index,i)
 					this.playlist.splice(index,1);
-					if(this.playlist.length>0 && i == index){
+					if(i == index){
 						if(index == -1 || index >= this.playlist.length){
-							let m = this.playlist.length - 1;
-							this.clicklist(m);
+							if(player.playerStatus.playing){
+								let m = this.playlist.length - 1;
+								if(m < 0){
+									player.stop();
+								}else{
+									this.clicklist(m);
+								}
+							}
 						}else{
-							this.clicklist(index);
+							player.stop();
 						}
-					}else{
-						player.stop();
 					}
 				},
 				addlist(item){
@@ -462,6 +497,7 @@
 					})
 				},
 				playselect(item){
+					/*
 					this.playlist.push({
 						index:item.id,
 						song:item,
@@ -477,8 +513,9 @@
 							element.now = false;
 						}
 					}
-					console.log(po.index,index);
-					player.play(po.index);
+					*/
+					console.log(item);
+					player.play(item.id);
 				},
 				btnnext(){
 					player.next();
@@ -558,6 +595,9 @@
 						}else{
 							this.clicklist(i);
 						}
+					}else{
+						this.SongInfo.title = "KaraokePlayerDemo";
+						this.SongInfo.artist = "-";
 					}
 				},
 				changeconvolver(){
@@ -634,6 +674,10 @@
 		document.getElementById('vols').addEventListener('change',function(){
 			player.volume(this.value);
 		})
+
+		document.getElementById('pitch').addEventListener('change',function(){
+			player.pitch(this.value);
+		})
 		
 		player.onplaysonginfo = function(e){
 			vm.$data.SongInfo.title = e.title;
@@ -704,12 +748,28 @@
 		}
 
 		let volopenx = false
-		function volopen(){
+		function volopen(auto){
 			volopenx = !volopenx
 			if(volopenx){
 				document.getElementById('volinput').style.display = 'flex';
 			}else{
 				document.getElementById('volinput').style.display = 'none';
+			}
+			if(pitchopenx == true && auto == false){
+				pitchopen(true)
+			}
+		}
+
+		let pitchopenx = false
+		function pitchopen(auto){
+			pitchopenx = !pitchopenx
+			if(pitchopenx){
+				document.getElementById('picthinput').style.display = 'flex';
+			}else{
+				document.getElementById('picthinput').style.display = 'none';
+			}
+			if(volopenx == true && auto == false){
+				volopen(true)
 			}
 		}
 

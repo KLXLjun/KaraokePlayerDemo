@@ -20,6 +20,20 @@
 				left: 0;
 				top: 0;
 			}
+
+            .disconnect{
+                position: fixed;
+                left: 0px;
+                top: 0px;
+                width: 100%;
+                height: 100%;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #16161680;
+                z-index: 999;
+            }
         </style>
 	</head>
 	<body>
@@ -37,6 +51,9 @@
 					</div>
 				</div>
 			</div>
+            <div class="disconnect" :style={display:(noping==true?'none':'flex')}>
+                <h1 style="color: white;">Disconnect</h1>
+            </div>
         </div>
 	</body>
     <script src="js/postcode.js"></script>
@@ -49,7 +66,8 @@
 					title: 'KaraokePlayerDemo',
 					artist: '-',
 					album: '-',
-				}
+				},
+                noping: false,
 			}
 		});
     </script>
@@ -61,28 +79,60 @@
 
         window.KaraokeWorker = new SharedWorker('js/karaokeWorker.js','KaraokeWorker');
 
+        var reloadOK = false;
         window.onbeforeunload = () => {
 			window.KaraokeWorker.port.postMessage('SecondScreen Close');
 		};
+
+        function Workerbc(message) {
+			window.KaraokeWorker.port.postMessage(message);
+		}
+
+        Workerbc({	
+            code:window.PostCode.Ping
+        });
+        let ds = 0;
+        setInterval(() => {
+            Workerbc({	
+                code:window.PostCode.Ping
+            });
+            console.log("ping")
+            if(ds < 2) {
+                ds++
+            }
+            if(ds >= 2){
+                vm.$data.noping = false;
+            }
+        }, 1000);
 
         window.KaraokeWorker.port.postMessage('SecondScreen Load');
         window.KaraokeWorker.port.onmessage = (e) => {
             if(typeof e.data == "object"){
                 switch (e.data.code) {
                     case window.PostCode.CreateNewSong:
+                        reloadOK = false;
                         console.log("CreateNewSong");
                         lrPar.ReadLrc(e.data.oLrc,e.data.Lastlist);
                         console.log(e.data)
                         vm.$data.SongInfo.title = e.data.info.title;
 			            vm.$data.SongInfo.artist = e.data.info.artist;
+                        reloadOK = true;
                         break;
                     case window.PostCode.RefEvent:
+                        if(!reloadOK) return;
                         lrPar.RefLrcDisplay(e.data.seek);
                         break;
                     case window.PostCode.ConfigChange:
                         lrPar.ClassicKaraoke = e.data.ClassicKaraoke
                         lrPar.LastTime = e.data.LastTime
                         lrPar.LastTimePer = e.data.LastTimePer
+                        break;
+                    case window.PostCode.Pong:
+                        console.log(ds)
+                        if(ds>0){
+                            vm.$data.noping = true;
+                            ds--
+                        }
                         break;
                     default:
                         console.log(e.data);

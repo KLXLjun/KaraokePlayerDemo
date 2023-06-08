@@ -16,6 +16,8 @@ var Player = function(option){
 		loop:false
 	}
 
+	this.pitchTable = [48,50,52,53,55,57,59,60,62,64,65,67,69,71]; // 60 > C
+
 	this.ClassicKaraoke = false;
 	if(localStorage.getItem("ClassicKaraoke") == "true"){
 		this.ClassicKaraoke = true;
@@ -39,6 +41,12 @@ var Player = function(option){
 		this.LastTimePer = 1;
 	}
 	console.log("倒计时时间精度:",this.LastTimePer);
+
+	this.PitchValue = localStorage.getItem("PitchValue");
+	if(!this.PitchValue){
+		this.PitchValue = 7;
+	}
+	console.log("音高:",this.PitchValue,this.pitchTable[this.PitchValue]);
 
 	this.list = [];
 
@@ -187,7 +195,7 @@ var Player = function(option){
 		});
 
 		this.sound.addEventListener("playing",() =>{
-			this.playerStatus.playing = false;
+			this.playerStatus.playing = true;
 			this.playerStatus.paused = false;
 			this.playerStatus.ended = false;
 			Workerbc({
@@ -232,10 +240,7 @@ var Player = function(option){
 						selectx = element;
 					}
 				});
-				if(selectx==null){
-					console.warn("id不正确",index)
-					return
-				}
+				console.log(this.list);
 				if(this.aContext==null){
 					this.aContext = new(window.AudioContext || window.webkitAudioContext)();
 					this.aSource = this.aContext.createMediaElementSource(this.sound);
@@ -342,6 +347,10 @@ var Player = function(option){
 						}else{
 							this.lrPar.ReadLrc("[00:00.00]Not Found Lrc File")
 						}
+						Workerbc({	
+							code:window.PostCode.ConfigConfirm,
+							ClassicKaraoke:this.ClassicKaraoke,
+						});
 						Workerbc({	
 							code:window.PostCode.CreateNewSong,
 							info:selectx,
@@ -506,6 +515,14 @@ var Player = function(option){
 		if(typeof this.sound != "undefined"){
 			this.playerStatus.muted = !this.playerStatus.muted;
 			this.sound.muted = this.playerStatus.muted;
+		}
+	}
+
+	this.pitch = (v) => {
+		if(typeof this.sound != "undefined"){
+			this.PitchValue = v;
+			this.sound.playbackRate = 2 ** ((this.pitchTable[this.PitchValue] - 60) / 12);
+			console.log(2 ** ((this.pitchTable[this.PitchValue] - 60) / 12));
 		}
 	}
 }

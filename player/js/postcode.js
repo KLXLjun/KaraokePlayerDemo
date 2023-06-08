@@ -1,4 +1,6 @@
 window.PostCode = {
+    Ping: -998,
+    Pong: -999,
     Ctrl: -1,
     CreateNewSong: 0,
     RefEvent: 1,

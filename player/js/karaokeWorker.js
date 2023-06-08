@@ -16,18 +16,10 @@ onconnect = function(e) {
         }else{
             console.log(e.data);
         }
-        if (e.data === 'Main Close' || e.data === 'SecondScreen Close') {
-            const index = e.ports.findIndex(p => p === port);
-            portPool.splice(index, 1);
-        }else{
-            if (e.data === 'Main Load') {
-                IsMain = true;
+        portPool.forEach(ports => {
+            if(ports !== port){
+                ports.postMessage(e.data);
             }
-            portPool.forEach(ports => {
-                if(ports !== port){
-                    ports.postMessage(e.data);
-                }
-            })
-        }
+        })
     };
 }
