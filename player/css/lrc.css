@@ -1,3 +1,7 @@
+:root{
+	--lrc-font-size: 2rem;
+}
+
 /*--歌词样式 开始--*/
 .lrcdisplay{
     align-self: center;
@@ -9,7 +13,7 @@
 /* 滚动式输出 */
 .lrcdisplay_style{
 	margin: 0 auto;
-	font-size: 2rem;
+	font-size: var(--lrc-font-size);
 	padding: 8px 0px;
 	background: #fff -webkit-linear-gradient(left, coral, coral) no-repeat 0 0;
     -webkit-text-fill-color: transparent;
@@ -42,7 +46,7 @@
 /* 经典卡拉OK */
 .lrcdisplay_classic_style{
 	margin: 0 auto;
-	font-size: 2rem;
+	font-size: var(--lrc-font-size);
 	padding: 8px 0px;
 	background: #fff -webkit-linear-gradient(left, coral, coral) no-repeat 0 0;
     -webkit-text-fill-color: transparent;

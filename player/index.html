@@ -10,6 +10,8 @@
 		<link rel="stylesheet" href="css/lrc.css"/>
 		<script src="js/vue-i18n.min.js"></script>
 		<script src="js/lang.js"></script>
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/white.css">
 		<style>
 			*{
 				font-family: 'Microsoft YaHei',Arial,Helvetica,Sans-Serif;;
@@ -129,9 +131,9 @@
 	<body>
 		<div id="app">
 			<div style="position: fixed;top: 0;left: 0;width: 100%;height: calc(100% - 90px);text-align: center;z-index: 10;" >
-				<div>
-					<p style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;">{{ SongInfo.title }}</p>
-					<p style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;">{{ SongInfo.artist }}</p>
+				<div style="display: flex;flex-direction: column;align-items: flex-start;">
+					<span style="text-align: left;font-size: 32px;margin-top: 0.5rem;margin-bottom: 0.5rem;margin-left: 0.4rem;color: white;padding: 0.4rem;background: rgba(0, 0, 0, 0.616);">{{ SongInfo.title }}</span>
+					<span style="text-align: left;font-size: 16px;margin-top: 0.5rem;margin-bottom: 0rem;margin-left: 0.4rem;color: white;padding: 0.4rem;background: rgba(0, 0, 0, 0.616);">{{ SongInfo.artist }}</span>
 				</div>
 				<div id="lrcSor" style="height: 240px;width: 100%;background-color: rgb(19 19 19 / 60%);overflow: hidden;display: flex;position: absolute;bottom: 0;justify-content: center;flex-direction: column;">
 					<div id="lasttimeprocess" style="align-self: center;margin: 0px auto;background-color: coral;height: 0rem;position: absolute;top: 0;width: 100%;"></div>
@@ -143,7 +145,7 @@
 			</div>
 			
 			<div style="position: fixed;bottom: 0;left: 0;height: 90px;width: 100%;z-index: 30;background-color: rgba(19, 19, 19, 0.6);">
-				<div style="width: 100%;height: 100%;">
+				<div id="control_panel" style="width: 100%;height: 100%;transition: all .2s ease-in;">
 					<div style="margin-top: 10px;padding-left: 40px;padding-right: 40px;">
 						<div id="cur_time" style="height: 4px;position: relative;margin: 4px 0px 4px;cursor: pointer;width: 100%;margin-left: 4px;margin-right: 4px;margin: 16px 0;">
 							<div style="width: 100%;height: 4px;position: absolute;background-color: #1B5E20;"></div>
@@ -252,6 +254,12 @@
 										<input type="range" min="2" max="8" id="lasttimeinput" value="{{lt}}" onchange="SetLastTime()">
 										<label>8</label>
 									</div>
+									<div class="field-row" style="width: 100%;">
+										<label style="width: 260px;">{{ $t("settingLyricFontSize") }}:[{{ lt }}]</label>
+										<label>1</label>
+										<input type="range" min="2" max="8" id="lasttimeinput" value="{{lt}}">
+										<label>8</label>
+									</div>
 									<div class="field-row">
 										<label for="textx">{{ $t("settingCountdownTimeDisplayAccuracy") }}</label>
 										<select id="LastPrecision" onchange="SetLastTimePer()">
@@ -280,13 +288,21 @@
 				</div>
 			</div>
 
-			<div style="position: fixed;bottom: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 1;">
+			<div style="position: fixed;bottom: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 2;">
 				<canvas id="cvs" style="position: fixed;left: 0;bottom: 0;"></canvas>
+			</div>
+			<div style="position: fixed;bottom: 0;left: 0;width: 100%;height: 100%;text-align: center;z-index: 1;">
+				<div class="reveal deck1">
+					<div class="slides" id="reveal_list">
+
+					</div>
+				</div>
 			</div>
 		</div>
 		<audio id="audioElement" style="display: none;" controls="false" preload="metadata"></audio>
 	</body>
 	<script src="js/postcode.js"></script>
+	<script type="text/javascript" src="js/reveal.js"></script>
 	<script>
 		window.KaraokeWorker = new SharedWorker('js/karaokeWorker.js','KaraokeWorker');
 		function secondToDate(result) {
@@ -342,6 +358,12 @@
 	</script>
 	<script src="js/player.js"></script>
 	<script>
+		window.PlayerBackground = [];
+
+		let isMove = false,
+		    moveTimer = null;
+			sleepTime = 5000; //用户静止不动鼠标的等待时间
+
 		function findPos(el){
 			let x = 0, y = 0;
 			if(el.offsetParent){
@@ -633,6 +655,61 @@
 				document.getElementById("cvs").height = 330;
 				document.getElementById("cvs").style.width = fullWidth;
 				document.getElementById("cvs").style.height = 330;
+
+				window.onmousemove = function(){
+					if(!isMove){
+						document.getElementById("control_panel").style.opacity = 1;
+					}
+					isMove = true;
+					clearTimeout(moveTimer);
+					//console.log(isMove); // 移动时
+					if(!player.playerStatus.paused){
+						moveTimer = setTimeout(function(){
+							isMove = false;
+							//console.log(isMove); // 静止后
+							document.getElementById("control_panel").style.opacity = 0;
+						},sleepTime);
+					}
+				}
+
+				let ajaxRequest = new XMLHttpRequest();
+				ajaxRequest.open('GET', 'background.conf', true);
+				ajaxRequest.responseType = 'text';
+				ajaxRequest.onreadystatechange = () => {
+					if (ajaxRequest.readyState == 4) {
+						if (ajaxRequest.status == 200) {
+							let data = ajaxRequest.response;
+							let p = data.split('\n');
+
+							let ele = document.getElementById("reveal_list");
+
+							p.forEach(element => {
+								if(element.indexOf("#") == -1){
+									window.PlayerBackground.push(element);
+
+									let element1 = document.createElement("section");
+									element1.setAttribute("data-background-image","background/" + element);
+									ele.appendChild(element1);
+								}
+							});
+
+							let deck1 = new Reveal(document.querySelector('.deck1'), {
+								controls: false,
+            					progress: false,
+								autoSlide: 7500,
+								loop: true,
+								autoSlideStoppable: false,
+							});
+							deck1.initialize();
+							deck1.on('ready', event => {
+								console.log("ready!");
+								deck1.right();
+								console.log(deck1.getSlides());
+							});
+						}
+					}
+				}
+				ajaxRequest.send();
 			}
 		});
 		
